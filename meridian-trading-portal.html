@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meridian — Real-Time Trading Infrastructure for Banks &amp; Wealth Platforms</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a0e16;
+    --bg-alt:#0c111d;
+    --panel:#111729;
+    --panel-2:#141c33;
+    --border:#232b46;
+    --border-soft:#1a2138;
+    --amber:#e8a33d;
+    --amber-dim:#8a6428;
+    --amber-glow:rgba(232,163,61,.18);
+    --text:#e9ecf5;
+    --text-mute:#8b93ab;
+    --text-dim:#5c6480;
+    --up:#33d17a;
+    --down:#ff5c6c;
+    --serif:'Fraunces', serif;
+    --sans:'Inter', system-ui, sans-serif;
+    --mono:'IBM Plex Mono', monospace;
+  }
+
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--sans);
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:inherit; text-decoration:none;}
+  img,svg{display:block;}
+  .wrap{max-width:1280px; margin:0 auto; padding:0 32px;}
+
+  ::selection{background:var(--amber-glow); color:var(--amber);}
+  :focus-visible{outline:2px solid var(--amber); outline-offset:3px;}
+
+  .eyebrow{
+    font-family:var(--mono);
+    font-size:12px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--amber);
+    display:flex; align-items:center; gap:9px;
+  }
+
+  .live-dot{
+    width:7px; height:7px; border-radius:50%;
+    background:var(--up);
+    box-shadow:0 0 0 0 rgba(51,209,122,.6);
+    animation:pulse 2s infinite;
+    flex-shrink:0;
+  }
+  .live-dot.amber{background:var(--amber); box-shadow:0 0 0 0 rgba(232,163,61,.6);}
+  @keyframes pulse{
+    0%{box-shadow:0 0 0 0 rgba(51,209,122,.55);}
+    70%{box-shadow:0 0 0 7px rgba(51,209,122,0);}
+    100%{box-shadow:0 0 0 0 rgba(51,209,122,0);}
+  }
+  .live-dot.amber{animation:pulse-amber 2s infinite;}
+  @keyframes pulse-amber{
+    0%{box-shadow:0 0 0 0 rgba(232,163,61,.55);}
+    70%{box-shadow:0 0 0 7px rgba(232,163,61,0);}
+    100%{box-shadow:0 0 0 0 rgba(232,163,61,0);}
+  }
+
+  /* ---------- Header ---------- */
+  .topbar{
+    position:sticky; top:0; z-index:50;
+    background:rgba(10,14,22,.88);
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--border-soft);
+  }
+  .topbar .wrap{display:flex; align-items:center; justify-content:space-between; height:72px;}
+  .brand{display:flex; align-items:center; gap:10px; font-family:var(--serif); font-weight:600; font-size:21px; letter-spacing:.01em;}
+  .brand .mark{
+    width:30px; height:30px; border-radius:7px;
+    background:linear-gradient(160deg, var(--amber), #a9701f);
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--mono); font-weight:600; font-size:14px; color:#0a0e16;
+  }
+  .nav-links{display:flex; gap:34px; font-size:14.5px; color:var(--text-mute);}
+  .nav-links a:hover{color:var(--text);}
+  .btn{
+    font-family:var(--sans); font-weight:600; font-size:14px;
+    padding:11px 20px; border-radius:7px; border:1px solid transparent;
+    cursor:pointer; transition:transform .15s ease, background .15s ease, border-color .15s ease;
+    display:inline-flex; align-items:center; gap:8px;
+  }
+  .btn-primary{background:var(--amber); color:#181206;}
+  .btn-primary:hover{transform:translateY(-1px); background:#f0ad4d;}
+  .btn-ghost{border-color:var(--border); color:var(--text);}
+  .btn-ghost:hover{border-color:var(--amber-dim); background:var(--amber-glow);}
+  .header-actions{display:flex; align-items:center; gap:20px;}
+
+  /* ---------- Ticker tape ---------- */
+  .ticker-tape{
+    background:#080b12;
+    border-bottom:1px solid var(--border-soft);
+    overflow:hidden;
+    position:relative;
+    height:46px;
+  }
+  .ticker-tape::before, .ticker-tape::after{
+    content:''; position:absolute; top:0; bottom:0; width:60px; z-index:2; pointer-events:none;
+  }
+  .ticker-tape::before{left:0; background:linear-gradient(90deg,#080b12, transparent);}
+  .ticker-tape::after{right:0; background:linear-gradient(-90deg,#080b12, transparent);}
+  .ticker-track{
+    display:flex; align-items:center; height:100%;
+    width:max-content;
+    animation:scroll-tape 42s linear infinite;
+  }
+  .ticker-tape:hover .ticker-track{animation-play-state:paused;}
+  @keyframes scroll-tape{
+    from{transform:translateX(0);}
+    to{transform:translateX(-50%);}
+  }
+  .ticker-item{
+    display:flex; align-items:center; gap:9px;
+    padding:0 22px;
+    border-right:1px solid var(--border-soft);
+    font-family:var(--mono); font-size:13px;
+    white-space:nowrap;
+  }
+  .t-logo{
+    width:20px; height:20px; border-radius:5px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:10px; font-weight:600; color:#0a0e16; font-family:var(--mono);
+  }
+  .t-ticker{color:var(--text); font-weight:600; letter-spacing:.02em;}
+  .t-price{color:var(--text-mute);}
+  .t-change{display:flex; align-items:center; gap:3px; font-weight:600;}
+  .t-change.up{color:var(--up);}
+  .t-change.down{color:var(--down);}
+
+  /* ---------- Section basics ---------- */
+  section{padding:96px 0;}
+  .section-head{max-width:640px; margin-bottom:48px;}
+  .section-head h2{
+    font-family:var(--serif); font-weight:500; font-size:36px; margin-top:14px; letter-spacing:-.01em;
+  }
+  .section-head p{color:var(--text-mute); margin-top:14px; font-size:16px; max-width:560px;}
+
+  /* ---------- Hero ---------- */
+  .hero{padding:88px 0 80px; border-bottom:1px solid var(--border-soft);}
+  .hero .wrap{display:grid; grid-template-columns:1.05fr .95fr; gap:64px; align-items:center;}
+  .hero h1{
+    font-family:var(--serif); font-weight:500; font-size:56px; line-height:1.06; letter-spacing:-.015em;
+    margin-top:18px;
+  }
+  .hero h1 em{font-style:italic; color:var(--amber);}
+  .hero p.lead{color:var(--text-mute); font-size:17.5px; margin-top:22px; max-width:480px;}
+  .hero-ctas{display:flex; gap:14px; margin-top:34px;}
+  .trust-line{margin-top:40px; font-size:13px; color:var(--text-dim); font-family:var(--mono); letter-spacing:.02em;}
+
+  .hero-card{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:24px 24px 18px;
+    box-shadow:0 30px 60px -25px rgba(0,0,0,.55);
+  }
+  .hero-card-head{display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;}
+  .hero-card-head .label{font-family:var(--mono); font-size:12px; color:var(--text-mute); letter-spacing:.08em; text-transform:uppercase;}
+  .hero-card-value{font-family:var(--serif); font-size:34px; font-weight:500; margin-top:4px;}
+  .hero-card-delta{font-family:var(--mono); font-size:14px; font-weight:600; display:flex; align-items:center; gap:5px;}
+
+  /* ---------- Charts (shared) ---------- */
+  .chart-svg{width:100%; height:auto; display:block;}
+  .spark-fill{opacity:.16;}
+
+  /* ---------- Market overview ---------- */
+  .overview-grid{
+    display:grid; grid-template-columns:repeat(3,1fr); gap:20px;
+  }
+  .stat-card{
+    background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:22px 22px 8px;
+  }
+  .stat-top{display:flex; justify-content:space-between; align-items:flex-start;}
+  .stat-label{font-family:var(--mono); font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--text-mute);}
+  .stat-value{font-family:var(--serif); font-size:28px; font-weight:500; margin-top:6px;}
+  .stat-delta{font-family:var(--mono); font-size:13px; font-weight:600; margin-top:2px; display:flex; align-items:center; gap:4px;}
+  .up{color:var(--up);}
+  .down{color:var(--down);}
+
+  /* ---------- Split section ---------- */
+  .split{display:grid; grid-template-columns:1fr 1fr; gap:22px; align-items:start;}
+  .panel{
+    background:var(--panel); border:1px solid var(--border); border-radius:14px; overflow:hidden;
+  }
+  .panel-head{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:20px 22px; border-bottom:1px solid var(--border-soft);
+  }
+  .panel-head h3{font-family:var(--serif); font-size:19px; font-weight:500;}
+  .panel-head .eyebrow{font-size:11px;}
+
+  table{width:100%; border-collapse:collapse;}
+  thead th{
+    text-align:left; font-family:var(--mono); font-size:11px; letter-spacing:.06em; text-transform:uppercase;
+    color:var(--text-dim); font-weight:500; padding:12px 22px; border-bottom:1px solid var(--border-soft);
+  }
+  thead th.num, td.num{text-align:right;}
+  tbody td{
+    padding:13px 22px; font-size:14px; border-bottom:1px solid var(--border-soft);
+    transition:background .5s ease;
+  }
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr.flash td{background:var(--flash-color, rgba(232,163,61,.10));}
+
+  .sec-name{display:flex; align-items:center; gap:10px;}
+  .sec-name .t-logo{width:26px; height:26px; font-size:11px; border-radius:6px;}
+  .sec-name .names{display:flex; flex-direction:column; line-height:1.25;}
+  .sec-name .full{color:var(--text-mute); font-size:12px;}
+  td.mono, .mono-cell{font-family:var(--mono); font-size:13.5px;}
+  .chip{display:inline-flex; align-items:center; gap:4px; font-family:var(--mono); font-weight:600; font-size:13px;}
+
+  .portfolio-summary{
+    display:flex; gap:0; padding:20px 22px; border-bottom:1px solid var(--border-soft);
+    background:var(--panel-2);
+  }
+  .ps-block{flex:1;}
+  .ps-block + .ps-block{border-left:1px solid var(--border-soft); padding-left:22px;}
+  .ps-label{font-family:var(--mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--text-dim);}
+  .ps-value{font-family:var(--serif); font-size:24px; margin-top:5px; font-weight:500;}
+  .ps-sub{font-family:var(--mono); font-size:12.5px; margin-top:3px;}
+
+  /* ---------- Institutions section ---------- */
+  .feature-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:18px;}
+  .feature-card{
+    background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:26px 22px;
+  }
+  .feature-card .num{font-family:var(--mono); color:var(--amber); font-size:13px; letter-spacing:.06em;}
+  .feature-card h4{font-family:var(--serif); font-weight:500; font-size:19px; margin-top:14px;}
+  .feature-card p{color:var(--text-mute); font-size:14px; margin-top:10px; line-height:1.55;}
+
+  /* ---------- CTA / Signup ---------- */
+  .cta-section{
+    background:var(--bg-alt); border-top:1px solid var(--border-soft); border-bottom:1px solid var(--border-soft);
+  }
+  .cta-grid{display:grid; grid-template-columns:.85fr 1.15fr; gap:60px;}
+  .cta-copy h2{font-family:var(--serif); font-size:34px; font-weight:500; margin-top:16px; letter-spacing:-.01em;}
+  .cta-copy p{color:var(--text-mute); margin-top:16px; max-width:420px;}
+  .cta-list{margin-top:28px; display:flex; flex-direction:column; gap:12px;}
+  .cta-list li{list-style:none; display:flex; gap:10px; font-size:14px; color:var(--text-mute); align-items:baseline;}
+  .cta-list li::before{content:'—'; color:var(--amber); flex-shrink:0;}
+
+  form{background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:32px;}
+  .form-row{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  .field{margin-bottom:18px;}
+  .field label{font-family:var(--mono); font-size:11.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--text-mute); display:block; margin-bottom:7px;}
+  .field input, .field select, .field textarea{
+    width:100%; background:var(--bg-alt); border:1px solid var(--border); color:var(--text);
+    border-radius:8px; padding:11px 13px; font-family:var(--sans); font-size:14.5px;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus{border-color:var(--amber-dim);}
+  .field textarea{resize:vertical; min-height:80px;}
+  form .btn-primary{width:100%; justify-content:center; padding:13px; font-size:14.5px; margin-top:6px;}
+  .disclaimer{font-size:12px; color:var(--text-dim); margin-top:14px; text-align:center;}
+
+  .success-panel{
+    display:none; text-align:center; padding:50px 24px;
+  }
+  .success-panel .check{
+    width:52px; height:52px; border-radius:50%; background:var(--amber-glow); border:1px solid var(--amber-dim);
+    display:flex; align-items:center; justify-content:center; margin:0 auto 18px; color:var(--amber); font-size:22px;
+  }
+  .success-panel h3{font-family:var(--serif); font-size:22px; font-weight:500;}
+  .success-panel p{color:var(--text-mute); margin-top:8px; font-size:14px;}
+
+  /* ---------- Footer ---------- */
+  footer{padding:48px 0;}
+  footer .wrap{display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;}
+  .footer-note{font-size:12.5px; color:var(--text-dim); max-width:520px;}
+  .footer-links{display:flex; gap:24px; font-size:13px; color:var(--text-mute);}
+
+  @media (max-width:980px){
+    .hero .wrap{grid-template-columns:1fr;}
+    .overview-grid{grid-template-columns:1fr;}
+    .split{grid-template-columns:1fr;}
+    .feature-grid{grid-template-columns:1fr 1fr;}
+    .cta-grid{grid-template-columns:1fr;}
+    .nav-links{display:none;}
+  }
+  @media (max-width:600px){
+    .feature-grid{grid-template-columns:1fr;}
+    .form-row{grid-template-columns:1fr;}
+    .hero h1{font-size:38px;}
+  }
+
+  @media (prefers-reduced-motion:reduce){
+    .ticker-track{animation:none;}
+    .live-dot{animation:none;}
+    *{transition:none !important;}
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="topbar">
+  <div class="wrap">
+    <div class="brand"><span class="mark">M</span>MERIDIAN</div>
+    <nav class="nav-links">
+      <a href="#overview">Platform</a>
+      <a href="#movers">Market Data</a>
+      <a href="#portfolio">Portfolio</a>
+      <a href="#institutions">For Institutions</a>
+      <a href="#signup">Contact</a>
+    </nav>
+    <div class="header-actions">
+      <a href="#signup" class="btn btn-ghost">Log in</a>
+      <a href="#signup" class="btn btn-primary">Request a demo</a>
+    </div>
+  </div>
+</header>
+
+<!-- TICKER TAPE -->
+<div class="ticker-tape">
+  <div class="ticker-track" id="tickerTrack"></div>
+</div>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="wrap">
+    <div>
+      <span class="eyebrow"><span class="live-dot amber"></span>REAL-TIME MARKET INFRASTRUCTURE</span>
+      <h1>Give every client a<br><em>trading floor</em> of their own.</h1>
+      <p class="lead">Meridian is the white-label engine behind modern trading portals — live pricing, portfolio accounting, and execution, wrapped in your bank's own brand and shipped in weeks, not years.</p>
+      <div class="hero-ctas">
+        <a href="#signup" class="btn btn-primary">Request a demo</a>
+        <a href="#overview" class="btn btn-ghost">See it live ↓</a>
+      </div>
+      <div class="trust-line">POWERING TRADING FOR CHALLENGER BANKS · WEALTH MANAGERS · BROKER-DEALERS</div>
+    </div>
+
+    <div class="hero-card">
+      <div class="hero-card-head">
+        <div>
+          <div class="label"><span class="live-dot"></span>&nbsp;MERIDIAN COMPOSITE INDEX</div>
+          <div class="hero-card-value" id="heroIndexValue">4,820.15</div>
+        </div>
+        <div class="hero-card-delta up" id="heroIndexDelta">▲ 0.42%</div>
+      </div>
+      <svg class="chart-svg" id="heroChart" viewBox="0 0 480 160" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="heroFill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#e8a33d" stop-opacity="0.35"/>
+            <stop offset="100%" stop-color="#e8a33d" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <path id="heroArea" fill="url(#heroFill)" stroke="none"></path>
+        <path id="heroLine" fill="none" stroke="#e8a33d" stroke-width="2"></path>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- MARKET OVERVIEW -->
+<section id="overview">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow"><span class="live-dot"></span>MARKET OVERVIEW</span>
+      <h2>The whole tape, in one glance.</h2>
+      <p>Index level, traded volume, and total market capitalization — streamed continuously and rendered without a page refresh.</p>
+    </div>
+
+    <div class="overview-grid">
+      <div class="stat-card">
+        <div class="stat-top">
+          <div>
+            <div class="stat-label">Market Index</div>
+            <div class="stat-value" id="statIndexValue">4,820.15</div>
+            <div class="stat-delta up" id="statIndexDelta">▲ 20.24 (0.42%)</div>
+          </div>
+        </div>
+        <svg class="chart-svg" id="idxChart" viewBox="0 0 300 90" preserveAspectRatio="none">
+          <path id="idxArea" class="spark-fill" fill="#e8a33d" stroke="none"></path>
+          <path id="idxLine" fill="none" stroke="#e8a33d" stroke-width="1.6"></path>
+        </svg>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-top">
+          <div>
+            <div class="stat-label">Traded Volume</div>
+            <div class="stat-value" id="statVolValue">182.4M</div>
+            <div class="stat-delta up" id="statVolDelta">▲ 3.1% vs 1h avg</div>
+          </div>
+        </div>
+        <svg class="chart-svg" id="volChart" viewBox="0 0 300 90" preserveAspectRatio="none">
+          <path id="volArea" class="spark-fill" fill="#33d17a" stroke="none"></path>
+          <path id="volLine" fill="none" stroke="#33d17a" stroke-width="1.6"></path>
+        </svg>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-top">
+          <div>
+            <div class="stat-label">Market Capitalization</div>
+            <div class="stat-value" id="statCapValue">$48.2T</div>
+            <div class="stat-delta down" id="statCapDelta">▼ 0.11%</div>
+          </div>
+        </div>
+        <svg class="chart-svg" id="capChart" viewBox="0 0 300 90" preserveAspectRatio="none">
+          <path id="capArea" class="spark-fill" fill="#ff5c6c" stroke="none"></path>
+          <path id="capLine" fill="none" stroke="#ff5c6c" stroke-width="1.6"></path>
+        </svg>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- BLUE CHIPS + PORTFOLIO -->
+<section id="movers">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow"><span class="live-dot"></span>LIVE DATA FEED</span>
+      <h2>Blue chips and client books, side by side.</h2>
+      <p>The same feed that drives the tape above powers every row below — no polling delay, no stale prices.</p>
+    </div>
+
+    <div class="split">
+      <!-- Blue chip movers -->
+      <div class="panel" id="portfolio">
+        <div class="panel-head">
+          <h3>Blue Chip Movers</h3>
+          <span class="eyebrow"><span class="live-dot"></span>LIVE</span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Security</th>
+              <th class="num">Price</th>
+              <th class="num">Volume</th>
+              <th class="num">Change</th>
+            </tr>
+          </thead>
+          <tbody id="bluechipBody"></tbody>
+        </table>
+      </div>
+
+      <!-- Client portfolio -->
+      <div class="panel">
+        <div class="panel-head">
+          <h3>Client Portfolio</h3>
+          <span class="eyebrow" style="color:var(--text-mute); font-family:var(--mono);">ACCT #4471</span>
+        </div>
+        <div class="portfolio-summary">
+          <div class="ps-block">
+            <div class="ps-label">Total Value</div>
+            <div class="ps-value" id="portTotalValue">$0.00</div>
+          </div>
+          <div class="ps-block">
+            <div class="ps-label">Unrealized P/L</div>
+            <div class="ps-value" id="portPL">$0.00</div>
+            <div class="ps-sub" id="portPLPct">0.00%</div>
+          </div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Security</th>
+              <th class="num">Shares</th>
+              <th class="num">Value</th>
+              <th class="num">P/L</th>
+            </tr>
+          </thead>
+          <tbody id="portfolioBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOR INSTITUTIONS -->
+<section id="institutions">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow"><span class="live-dot amber"></span>BUILT FOR BANKS &amp; INVESTORS</span>
+      <h2>Your brand. Our engine.</h2>
+      <p>Meridian is the infrastructure layer — you decide what your clients see, we make sure it's accurate to the millisecond.</p>
+    </div>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="num">01 / WHITE-LABEL</div>
+        <h4>Fully your brand</h4>
+        <p>Your logo, colors, and domain on every screen. Clients never see Meridian — they see your platform.</p>
+      </div>
+      <div class="feature-card">
+        <div class="num">02 / DATA ENGINE</div>
+        <h4>Sub-second market data</h4>
+        <p>A streaming price and volume feed built to keep tickers, charts, and portfolios in sync without polling.</p>
+      </div>
+      <div class="feature-card">
+        <div class="num">03 / MULTI-TENANT</div>
+        <h4>One deployment, every client</h4>
+        <p>Give each account its own portfolio, watchlist, and permissions from a single shared infrastructure.</p>
+      </div>
+      <div class="feature-card">
+        <div class="num">04 / COMPLIANCE</div>
+        <h4>Audit-ready by default</h4>
+        <p>Every order, quote, and portfolio change is logged and exportable for regulatory reporting.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SIGNUP / CTA -->
+<section class="cta-section" id="signup">
+  <div class="wrap">
+    <div class="cta-grid">
+      <div class="cta-copy">
+        <span class="eyebrow"><span class="live-dot amber"></span>PARTNER WITH MERIDIAN</span>
+        <h2>Bring your clients a trading portal worth logging into.</h2>
+        <p>Tell us about your institution and we'll set up a walkthrough of the platform, configured with your own securities and branding.</p>
+        <ul class="cta-list">
+          <li>Live technical walkthrough with our infrastructure team</li>
+          <li>A sandbox environment provisioned for your test accounts</li>
+          <li>Pricing scoped to your assets under management</li>
+        </ul>
+      </div>
+
+      <div>
+        <form id="demoForm">
+          <div class="form-row">
+            <div class="field">
+              <label for="fname">Full name</label>
+              <input type="text" id="fname" required placeholder="Jordan Ellery">
+            </div>
+            <div class="field">
+              <label for="femail">Work email</label>
+              <input type="email" id="femail" required placeholder="jordan@yourbank.com">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="field">
+              <label for="fcompany">Institution</label>
+              <input type="text" id="fcompany" required placeholder="Company name">
+            </div>
+            <div class="field">
+              <label for="frole">Institution type</label>
+              <select id="frole">
+                <option>Bank</option>
+                <option>Broker-Dealer</option>
+                <option>Wealth Manager</option>
+                <option>Fintech / Neobank</option>
+                <option>Other</option>
+              </select>
+            </div>
+          </div>
+          <div class="field">
+            <label for="faum">Assets under management</label>
+            <select id="faum">
+              <option>Under $100M</option>
+              <option>$100M – $1B</option>
+              <option>$1B – $10B</option>
+              <option>$10B+</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="fmsg">What are you looking to build?</label>
+            <textarea id="fmsg" placeholder="Tell us about your client base and trading needs..."></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary">Request platform demo</button>
+          <div class="disclaimer">No commitment. A specialist will follow up within one business day.</div>
+        </form>
+
+        <div class="success-panel" id="successPanel">
+          <div class="check">✓</div>
+          <h3>Request received</h3>
+          <p>A member of our partnerships team will reach out shortly to schedule your walkthrough.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="brand" style="font-size:16px;"><span class="mark" style="width:24px;height:24px;font-size:11px;">M</span>MERIDIAN</div>
+    <div class="footer-note">All prices, volumes, and portfolio figures on this page are simulated for demonstration purposes and do not represent real market data.</div>
+    <div class="footer-links">
+      <a href="#overview">Platform</a>
+      <a href="#institutions">Institutions</a>
+      <a href="#signup">Contact</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+/* ================= DATA MODEL ================= */
+const palette = ['#e8a33d','#33d17a','#5b8def','#c76bd1','#e05a5a','#3fc7c1','#d1a933','#8f8cf0'];
+const securities = [
+  {ticker:'AAPL', name:'Apple Inc.', price:214.32, color:palette[0]},
+  {ticker:'MSFT', name:'Microsoft Corp.', price:441.85, color:palette[1]},
+  {ticker:'NVDA', name:'NVIDIA Corp.', price:128.40, color:palette[2]},
+  {ticker:'JPM',  name:'JPMorgan Chase', price:212.67, color:palette[3]},
+  {ticker:'AMZN', name:'Amazon.com', price:198.55, color:palette[4]},
+  {ticker:'GOOGL',name:'Alphabet Inc.', price:176.20, color:palette[5]},
+  {ticker:'V',    name:'Visa Inc.', price:274.90, color:palette[6]},
+  {ticker:'UNH',  name:'UnitedHealth Grp', price:502.10, color:palette[7]},
+];
+securities.forEach(s=>{ s.open = s.price; s.volume = 8 + Math.random()*40; });
+
+const holdings = [
+  {ticker:'AAPL', shares:120, avgCost:150.10},
+  {ticker:'MSFT', shares:80,  avgCost:305.40},
+  {ticker:'NVDA', shares:220, avgCost:96.80},
+  {ticker:'JPM',  shares:150, avgCost:141.20},
+  {ticker:'V',    shares:100, avgCost:221.00},
+];
+
+let indexValue = 4820.15, indexOpen = indexValue;
+let volumeValue = 182.4, capValue = 48.2;
+const idxHist = Array(40).fill(indexValue);
+const volHist = Array(40).fill(volumeValue);
+const capHist = Array(40).fill(capValue);
+
+function fmt(n, d=2){ return n.toLocaleString('en-US', {minimumFractionDigits:d, maximumFractionDigits:d}); }
+function fmtMoney(n){ return '$' + fmt(n,2); }
+function pctChange(cur, base){ return ((cur-base)/base)*100; }
+function initials(name){
+  return name.split(' ').map(w=>w[0]).slice(0,1).join('').toUpperCase();
+}
+
+/* ================= TICKER TAPE ================= */
+function buildTickerHTML(){
+  return securities.map(s=>{
+    const chg = pctChange(s.price, s.open);
+    const dir = chg>=0 ? 'up':'down';
+    const arrow = chg>=0 ? '▲':'▼';
+    return `<div class="ticker-item" data-ticker="${s.ticker}">
+      <div class="t-logo" style="background:${s.color}">${initials(s.name)}</div>
+      <span class="t-ticker">${s.ticker}</span>
+      <span class="t-price" data-field="price">${fmt(s.price)}</span>
+      <span class="t-change ${dir}" data-field="change">${arrow} ${Math.abs(chg).toFixed(2)}%</span>
+    </div>`;
+  }).join('');
+}
+function renderTicker(){
+  document.getElementById('tickerTrack').innerHTML = buildTickerHTML() + buildTickerHTML();
+}
+
+/* ================= BLUE CHIPS TABLE ================= */
+function renderBluechips(){
+  const body = document.getElementById('bluechipBody');
+  body.innerHTML = securities.map(s=>{
+    const chg = pctChange(s.price, s.open);
+    const dir = chg>=0?'up':'down';
+    const arrow = chg>=0?'▲':'▼';
+    return `<tr data-row="${s.ticker}">
+      <td>
+        <div class="sec-name">
+          <div class="t-logo" style="background:${s.color}">${initials(s.name)}</div>
+          <div class="names"><span>${s.ticker}</span><span class="full">${s.name}</span></div>
+        </div>
+      </td>
+      <td class="num mono" data-cell="price">${fmtMoney(s.price)}</td>
+      <td class="num mono" data-cell="volume">${s.volume.toFixed(1)}M</td>
+      <td class="num"><span class="chip ${dir}" data-cell="change">${arrow} ${Math.abs(chg).toFixed(2)}%</span></td>
+    </tr>`;
+  }).join('');
+}
+
+/* ================= PORTFOLIO TABLE ================= */
+function renderPortfolio(){
+  const body = document.getElementById('portfolioBody');
+  let totalValue = 0, totalCost = 0;
+  const rows = holdings.map(h=>{
+    const s = securities.find(x=>x.ticker===h.ticker);
+    const value = h.shares * s.price;
+    const cost = h.shares * h.avgCost;
+    const pl = value - cost;
+    totalValue += value; totalCost += cost;
+    const dir = pl>=0?'up':'down';
+    const sign = pl>=0?'+':'−';
+    return `<tr data-prow="${h.ticker}">
+      <td>
+        <div class="sec-name">
+          <div class="t-logo" style="background:${s.color}">${initials(s.name)}</div>
+          <div class="names"><span>${h.ticker}</span><span class="full">${h.shares} sh · avg ${fmtMoney(h.avgCost)}</span></div>
+        </div>
+      </td>
+      <td class="num mono">${h.shares}</td>
+      <td class="num mono" data-pcell="value">${fmtMoney(value)}</td>
+      <td class="num"><span class="chip ${dir}" data-pcell="pl">${sign}${fmtMoney(Math.abs(pl))}</span></td>
+    </tr>`;
+  }).join('');
+  body.innerHTML = rows;
+
+  const totalPL = totalValue - totalCost;
+  const plPct = (totalPL/totalCost)*100;
+  const dir = totalPL>=0?'up':'down';
+  const sign = totalPL>=0?'+':'−';
+  document.getElementById('portTotalValue').textContent = fmtMoney(totalValue);
+  const plEl = document.getElementById('portPL');
+  plEl.textContent = sign + fmtMoney(Math.abs(totalPL));
+  plEl.className = 'ps-value ' + dir;
+  const plPctEl = document.getElementById('portPLPct');
+  plPctEl.textContent = (totalPL>=0?'▲ ':'▼ ') + Math.abs(plPct).toFixed(2) + '% overall';
+  plPctEl.className = 'ps-sub ' + dir;
+}
+
+/* ================= SPARKLINE / CHART RENDER ================= */
+function pathFromSeries(series, w, h, pad=4){
+  const min = Math.min(...series), max = Math.max(...series);
+  const range = (max-min) || 1;
+  const step = (w) / (series.length-1);
+  const pts = series.map((v,i)=>{
+    const x = i*step;
+    const y = h - pad - ((v-min)/range) * (h - pad*2);
+    return [x,y];
+  });
+  const line = 'M' + pts.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' L');
+  const area = line + ` L${w},${h} L0,${h} Z`;
+  return {line, area};
+}
+function drawChart(lineId, areaId, series, w, h){
+  const {line, area} = pathFromSeries(series, w, h);
+  const lineEl = document.getElementById(lineId);
+  const areaEl = document.getElementById(areaId);
+  if(lineEl) lineEl.setAttribute('d', line);
+  if(areaEl) areaEl.setAttribute('d', area);
+}
+
+/* ================= MARKET OVERVIEW STATS ================= */
+function renderOverview(){
+  const idxChg = pctChange(indexValue, indexOpen);
+  document.getElementById('heroIndexValue').textContent = fmt(indexValue);
+  document.getElementById('statIndexValue').textContent = fmt(indexValue);
+  const idxDir = idxChg>=0?'up':'down';
+  const idxArrow = idxChg>=0?'▲':'▼';
+  document.getElementById('heroIndexDelta').textContent = `${idxArrow} ${Math.abs(idxChg).toFixed(2)}%`;
+  document.getElementById('heroIndexDelta').className = 'hero-card-delta ' + idxDir;
+  document.getElementById('statIndexDelta').textContent = `${idxArrow} ${Math.abs(indexValue-indexOpen).toFixed(2)} (${Math.abs(idxChg).toFixed(2)}%)`;
+  document.getElementById('statIndexDelta').className = 'stat-delta ' + idxDir;
+
+  document.getElementById('statVolValue').textContent = volumeValue.toFixed(1) + 'M';
+  const volBaseline = 176;
+  const volChg = pctChange(volumeValue, volBaseline);
+  const volDir = volChg>=0?'up':'down';
+  document.getElementById('statVolDelta').textContent = `${volChg>=0?'▲':'▼'} ${Math.abs(volChg).toFixed(1)}% vs 1h avg`;
+  document.getElementById('statVolDelta').className = 'stat-delta ' + volDir;
+
+  document.getElementById('statCapValue').textContent = '$' + capValue.toFixed(1) + 'T';
+  const capChg = pctChange(capValue, 48.2);
+  const capDir = capChg>=0?'up':'down';
+  document.getElementById('statCapDelta').textContent = `${capChg>=0?'▲':'▼'} ${Math.abs(capChg).toFixed(2)}%`;
+  document.getElementById('statCapDelta').className = 'stat-delta ' + capDir;
+
+  drawChart('heroLine','heroArea', idxHist, 480, 160);
+  drawChart('idxLine','idxArea', idxHist, 300, 90);
+  drawChart('volLine','volArea', volHist, 300, 90);
+  drawChart('capLine','capArea', capHist, 300, 90);
+}
+
+/* ================= FLASH HIGHLIGHT ================= */
+function flashRow(selector){
+  const el = document.querySelector(selector);
+  if(!el) return;
+  el.classList.add('flash');
+  setTimeout(()=>el.classList.remove('flash'), 600);
+}
+
+/* ================= SIMULATION TICK ================= */
+function tick(){
+  // securities random walk
+  securities.forEach(s=>{
+    const vol = 0.006;
+    s.price = Math.max(1, s.price * (1 + (Math.random()-0.5)*vol));
+    s.volume = Math.max(0.5, s.volume + (Math.random()-0.5)*2.2);
+  });
+
+  // index / volume / cap derived + own noise
+  const avgChange = securities.reduce((a,s)=>a+pctChange(s.price,s.open),0)/securities.length;
+  indexValue = indexOpen * (1 + avgChange/100) * (1 + (Math.random()-0.5)*0.0015);
+  volumeValue = Math.max(20, volumeValue + (Math.random()-0.5)*6);
+  capValue = Math.max(1, capValue * (1 + (Math.random()-0.5)*0.003));
+
+  idxHist.push(indexValue); idxHist.shift();
+  volHist.push(volumeValue); volHist.shift();
+  capHist.push(capValue); capHist.shift();
+
+  renderTicker();
+  renderBluechips();
+  renderPortfolio();
+  renderOverview();
+
+  // flash a couple of random rows for a "live" feel
+  const randomSec = securities[Math.floor(Math.random()*securities.length)];
+  flashRow(`tr[data-row="${randomSec.ticker}"]`);
+  flashRow(`tr[data-prow="${randomSec.ticker}"]`);
+}
+
+/* ================= INIT ================= */
+renderTicker();
+renderBluechips();
+renderPortfolio();
+renderOverview();
+setInterval(tick, 1600);
+
+/* ================= FORM ================= */
+document.getElementById('demoForm').addEventListener('submit', function(e){
+  e.preventDefault();
+  this.style.display = 'none';
+  document.getElementById('successPanel').style.display = 'block';
+});
+</script>
+
+</body>
+</html>

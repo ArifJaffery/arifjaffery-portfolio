@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 34" width="220" height="34">
+  <defs>
+    <pattern id="wm01" width="26" height="26" patternTransform="rotate(-20)" patternUnits="userSpaceOnUse">
+      <text x="0" y="17" font-family="monospace" font-size="7" fill="#e8a33d" opacity="0.08">ETS</text>
+    </pattern>
+  </defs>
+  <rect width="220" height="34" fill="url(#wm01)"/>
+  <text x="0" y="23" font-family="'IBM Plex Mono', monospace" font-weight="600" font-size="13" letter-spacing="0.06em" fill="#e8a33d">01 / WHITE-LABEL</text>
+</svg>

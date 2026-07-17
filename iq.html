@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SQL Server & DevOps Interview Notes</title>
+
+<style>
+body{
+    margin:0;
+    font-family:Segoe UI,Arial,sans-serif;
+    background:#f4f6f8;
+    color:#222;
+    line-height:1.6;
+}
+
+header{
+    background:#0b5394;
+    color:white;
+    padding:30px;
+    text-align:center;
+}
+
+nav{
+    background:#16324f;
+    padding:12px;
+    position:sticky;
+    top:0;
+}
+
+nav a{
+    color:white;
+    text-decoration:none;
+    margin-right:20px;
+    font-weight:bold;
+}
+
+.container{
+    max-width:1200px;
+    margin:auto;
+    background:white;
+    padding:30px;
+}
+
+h2{
+    border-left:6px solid #0b5394;
+    padding-left:12px;
+    margin-top:40px;
+}
+
+h3{
+    color:#0b5394;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+    margin:20px 0;
+}
+
+table th{
+    background:#0b5394;
+    color:white;
+}
+
+table td,table th{
+    border:1px solid #ccc;
+    padding:10px;
+}
+
+pre{
+    background:#272822;
+    color:#f8f8f2;
+    padding:15px;
+    overflow:auto;
+    border-radius:6px;
+}
+
+code{
+    font-family:Consolas,monospace;
+}
+
+ul li{
+    margin:8px 0;
+}
+
+.button{
+    background:#0b5394;
+    color:white;
+    padding:10px 20px;
+    border:none;
+    border-radius:5px;
+    cursor:pointer;
+    font-size:15px;
+}
+
+footer{
+    text-align:center;
+    padding:30px;
+    color:#666;
+}
+
+@media print{
+    nav,.button{
+        display:none;
+    }
+}
+</style>
+
+</head>
+
+<body>
+
+<header>
+<h1>SQL Server & DevOps Interview Notes</h1>
+<p>Prepared from ChatGPT Conversation</p>
+
+<button class="button" onclick="window.print()">
+Print / Save as PDF
+</button>
+
+</header>
+
+<nav>
+<a href="#sql">SQL Server</a>
+<a href="#merge">Database Consolidation</a>
+<a href="#ci">Continuous Integration</a>
+<a href="#cd">Continuous Delivery</a>
+</nav>
+
+<div class="container">
+
+<section id="sql">
+
+<h2>SQL Server Interview Questions</h2>
+
+<h3>Frequently Asked Questions</h3>
+
+<ul>
+<li>DELETE vs TRUNCATE vs DROP</li>
+<li>Primary Key vs Unique Key</li>
+<li>Foreign Keys</li>
+<li>Indexes</li>
+<li>Clustered vs Non-Clustered Index</li>
+<li>Stored Procedures</li>
+<li>Views</li>
+<li>Triggers</li>
+<li>Transactions (ACID)</li>
+<li>Normalization</li>
+<li>CTE</li>
+<li>Temp Table vs Table Variable</li>
+<li>Execution Plan</li>
+<li>Parameter Sniffing</li>
+<li>Deadlocks</li>
+<li>Blocking</li>
+<li>Isolation Levels</li>
+<li>Recovery Models</li>
+<li>Query Store</li>
+<li>Window Functions</li>
+</ul>
+
+<h3>Example SQL</h3>
+
+<pre><code>SELECT TOP 3 *
+FROM Employee
+ORDER BY Salary DESC;</code></pre>
+
+<pre><code>WITH CTE AS
+(
+SELECT *,
+ROW_NUMBER() OVER(PARTITION BY Email ORDER BY Id) RN
+FROM Customer
+)
+DELETE FROM CTE
+WHERE RN > 1;</code></pre>
+
+</section>
+
+<section id="merge">
+
+<h2>Consolidating Two SQL Server Databases</h2>
+
+<h3>Common Approaches</h3>
+
+<ul>
+<li>Backup & Restore</li>
+<li>Import/Export Wizard</li>
+<li>Generate Scripts</li>
+<li>SSIS ETL</li>
+<li>INSERT INTO...SELECT</li>
+<li>MERGE Statement</li>
+<li>Linked Server</li>
+<li>Replication</li>
+</ul>
+
+<h3>MERGE Example</h3>
+
+<pre><code>MERGE Customers AS Target
+USING SourceCustomers AS Source
+ON Target.CustomerID = Source.CustomerID
+
+WHEN MATCHED THEN
+UPDATE SET
+Target.Name = Source.Name
+
+WHEN NOT MATCHED THEN
+INSERT(CustomerID,Name)
+VALUES(Source.CustomerID,Source.Name);</code></pre>
+
+<h3>Migration Checklist</h3>
+
+<ul>
+<li>Compare schemas</li>
+<li>Compare indexes</li>
+<li>Compare constraints</li>
+<li>Move parent tables first</li>
+<li>Move child tables</li>
+<li>Validate row counts</li>
+<li>Test application</li>
+</ul>
+
+</section>
+
+<section id="ci">
+
+<h2>Continuous Integration (CI)</h2>
+
+<h3>Pipeline</h3>
+
+<pre><code>Developer Commit
+
+↓
+
+Git Repository
+
+↓
+
+Build
+
+↓
+
+Unit Tests
+
+↓
+
+Code Analysis
+
+↓
+
+Publish Artifact</code></pre>
+
+<h3>CI Best Practices</h3>
+
+<ul>
+<li>Version Control</li>
+<li>Frequent Commits</li>
+<li>Automated Build</li>
+<li>Automated Tests</li>
+<li>Code Quality Checks</li>
+<li>Dependency Management</li>
+<li>Artifact Publishing</li>
+<li>Security Scanning</li>
+<li>Pipeline as Code (YAML)</li>
+</ul>
+
+<h3>Example YAML</h3>
+
+<pre><code>trigger:
+- main
+
+steps:
+
+- script: dotnet restore
+
+- script: dotnet build
+
+- script: dotnet test</code></pre>
+
+</section>
+
+<section id="cd">
+
+<h2>Continuous Delivery (CD)</h2>
+
+<h3>Deployment Flow</h3>
+
+<pre><code>Build Artifact
+
+↓
+
+Development
+
+↓
+
+QA
+
+↓
+
+UAT
+
+↓
+
+Production</code></pre>
+
+<h3>CD Includes</h3>
+
+<ul>
+<li>Deployment Automation</li>
+<li>Environment Management</li>
+<li>Infrastructure as Code</li>
+<li>Configuration Management</li>
+<li>Blue-Green Deployment</li>
+<li>Canary Deployment</li>
+<li>Rolling Deployment</li>
+<li>Monitoring</li>
+<li>Rollback Strategy</li>
+<li>Approval Gates</li>
+</ul>
+
+<h3>CI vs CD</h3>
+
+<table>
+
+<tr>
+<th>CI</th>
+<th>CD</th>
+</tr>
+
+<tr>
+<td>Build Code</td>
+<td>Deploy Code</td>
+</tr>
+
+<tr>
+<td>Run Tests</td>
+<td>Deploy to Environments</td>
+</tr>
+
+<tr>
+<td>Create Artifact</td>
+<td>Release Artifact</td>
+</tr>
+
+<tr>
+<td>Fast Feedback</td>
+<td>Reliable Deployment</td>
+</tr>
+
+</table>
+
+</section>
+
+<section>
+
+<h2>Interview Tips</h2>
+
+<ul>
+<li>Explain concepts with practical examples.</li>
+<li>Mention tools you've used (Azure DevOps, GitHub Actions, Jenkins).</li>
+<li>Discuss troubleshooting slow SQL queries using execution plans.</li>
+<li>Understand deployment strategies like Blue-Green and Canary.</li>
+<li>Know the difference between Continuous Delivery and Continuous Deployment.</li>
+<li>Emphasize automation, testing, and monitoring in DevOps practices.</li>
+</ul>
+
+</section>
+
+</div>
+
+<footer>
+Generated from ChatGPT Conversation<br>
+SQL Server • DevOps • CI/CD Interview Preparation
+</footer>
+
+</body>
+</html>

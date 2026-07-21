@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ContentFlow AI — Content in. Products out.</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+:root{
+  --bg:#12151a;
+  --bg-panel:#181c24;
+  --bg-panel-2:#1e2430;
+  --grid-line:#262c38;
+  --hairline:#2c3340;
+  --ink:#f2efe6;
+  --ink-dim:#9aa2b1;
+  --ink-faint:#5c6474;
+  --amber:#e8a33d;
+  --amber-soft:rgba(232,163,61,.14);
+  --teal:#49c5b6;
+  --teal-soft:rgba(73,197,182,.14);
+
+  --font-display:'Space Grotesk', sans-serif;
+  --font-body:'IBM Plex Sans', sans-serif;
+  --font-mono:'IBM Plex Mono', monospace;
+}
+
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  margin:0;
+  background:
+    repeating-linear-gradient(0deg, transparent 0 39px, var(--grid-line) 39px 40px),
+    repeating-linear-gradient(90deg, transparent 0 39px, var(--grid-line) 39px 40px),
+    var(--bg);
+  background-attachment:fixed;
+  color:var(--ink);
+  font-family:var(--font-body);
+  -webkit-font-smoothing:antialiased;
+}
+img,svg{display:block;max-width:100%;}
+a{color:inherit;text-decoration:none;}
+.wrap{max-width:1180px;margin:0 auto;padding:0 32px;}
+.eyebrow{
+  font-family:var(--font-mono);
+  font-size:.72rem;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:var(--amber);
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.eyebrow .led{
+  width:7px;height:7px;border-radius:50%;
+  background:var(--amber);
+  box-shadow:0 0 0 3px var(--amber-soft);
+  animation:blink 2.2s ease-in-out infinite;
+}
+@keyframes blink{ 0%,100%{opacity:1;} 50%{opacity:.35;} }
+
+h1,h2,h3{font-family:var(--font-display);margin:0;letter-spacing:-.01em;}
+p{margin:0;color:var(--ink-dim);line-height:1.65;}
+
+.btn{
+  display:inline-flex;align-items:center;gap:8px;
+  font-family:var(--font-body);
+  font-weight:600;
+  font-size:.92rem;
+  padding:13px 22px;
+  border-radius:3px;
+  cursor:pointer;
+  border:1px solid transparent;
+  transition:transform .15s ease, background .2s ease, border-color .2s ease;
+  white-space:nowrap;
+}
+.btn:hover{transform:translateY(-1px);}
+.btn:focus-visible{outline:2px solid var(--teal);outline-offset:2px;}
+.btn-primary{background:var(--amber);color:#181405;}
+.btn-primary:hover{background:#f0b459;}
+.btn-outline{border-color:var(--hairline);color:var(--ink);background:transparent;}
+.btn-outline:hover{border-color:var(--ink-faint);}
+
+/* ---------- NAV ---------- */
+header{
+  position:sticky;top:0;z-index:100;
+  background:rgba(18,21,26,.82);
+  backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--hairline);
+}
+nav{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:18px 0;
+}
+.brand{
+  display:flex;align-items:center;gap:10px;
+  font-family:var(--font-display);font-weight:700;font-size:1.15rem;
+  letter-spacing:-.01em;
+}
+.brand .mark{
+  width:30px;height:30px;
+  border:1.5px solid var(--amber);
+  border-radius:4px;
+  display:flex;align-items:center;justify-content:center;
+  position:relative;
+}
+.brand .mark::before{
+  content:'';
+  width:6px;height:6px;border-radius:50%;
+  background:var(--amber);
+}
+.brand small{
+  display:block;font-family:var(--font-mono);font-weight:400;
+  font-size:.6rem;letter-spacing:.12em;color:var(--ink-faint);
+  margin-top:1px;
+}
+.navlinks{display:flex;gap:30px;font-size:.9rem;color:var(--ink-dim);}
+.navlinks a:hover{color:var(--ink);}
+.navcta{display:flex;align-items:center;gap:14px;}
+.navcta .btn-outline{display:none;}
+@media(min-width:860px){ .navcta .btn-outline{display:inline-flex;} }
+.hamburger{display:none;}
+@media(max-width:860px){
+  .navlinks{display:none;}
+}
+
+/* ---------- HERO ---------- */
+.hero{padding:76px 0 40px;}
+.hero-top{
+  display:grid;grid-template-columns:1.1fr .8fr;gap:56px;align-items:end;
+}
+@media(max-width:900px){ .hero-top{grid-template-columns:1fr;} }
+.hero h1{
+  font-size:clamp(2.6rem,5.6vw,4.2rem);
+  line-height:1.02;
+  margin:18px 0 22px;
+}
+.hero h1 .accent{color:var(--amber);}
+.hero-lede p{font-size:1.08rem;max-width:46ch;}
+.hero-cta{display:flex;gap:14px;margin-top:30px;flex-wrap:wrap;}
+
+.hero-side{
+  font-family:var(--font-mono);font-size:.8rem;color:var(--ink-faint);
+  border-left:1px solid var(--hairline);
+  padding-left:20px;
+}
+.hero-side .stat{margin-bottom:18px;}
+.hero-side .stat b{
+  display:block;font-family:var(--font-display);font-size:1.7rem;color:var(--ink);
+  font-weight:600;
+}
+
+/* ---------- RAIL (signature element) ---------- */
+.rail-section{padding:64px 0 20px;position:relative;}
+.rail-caption{
+  display:flex;justify-content:space-between;align-items:baseline;
+  margin-bottom:30px;flex-wrap:wrap;gap:10px;
+}
+.rail-caption h3{font-size:1.05rem;color:var(--ink-dim);font-weight:500;font-family:var(--font-mono);letter-spacing:.02em;text-transform:uppercase;font-size:.78rem;}
+.rail-caption .readout{
+  font-family:var(--font-mono);font-size:.78rem;color:var(--teal);
+  height:1.2em;overflow:hidden;
+}
+
+.rail-svg{width:100%;height:auto;overflow:visible;}
+.rail-line{stroke:var(--hairline);stroke-width:2;}
+.rail-line-active{stroke:var(--amber);stroke-width:2;stroke-dasharray:6 6;opacity:.55;}
+.rail-node-bg{fill:var(--bg-panel-2);stroke:var(--hairline);stroke-width:1.5;}
+.rail-node-ring{fill:none;stroke:var(--amber);stroke-width:1.5;opacity:.5;}
+.rail-icon{stroke:var(--ink);stroke-width:1.6;fill:none;stroke-linecap:round;stroke-linejoin:round;}
+.rail-num{font-family:var(--font-mono);font-size:11px;fill:var(--ink-faint);}
+.rail-label{font-family:var(--font-body);font-size:13px;font-weight:600;fill:var(--ink);}
+.rail-sub{font-family:var(--font-mono);font-size:10.5px;fill:var(--ink-faint);}
+.rail-pulse{fill:var(--amber);filter:drop-shadow(0 0 5px var(--amber));}
+
+@media (prefers-reduced-motion: no-preference){
+  .pulse-motion{ animation:none; }
+}
+
+/* ---------- METRICS STRIP ---------- */
+.metrics{
+  border-top:1px solid var(--hairline);
+  border-bottom:1px solid var(--hairline);
+  margin-top:56px;
+}
+.metrics .wrap{
+  display:grid;grid-template-columns:repeat(4,1fr);
+}
+@media(max-width:760px){ .metrics .wrap{grid-template-columns:repeat(2,1fr);} }
+.metric{
+  padding:26px 20px;
+  border-right:1px solid var(--hairline);
+}
+.metric:last-child{border-right:none;}
+.metric b{
+  display:block;font-family:var(--font-display);font-size:2rem;color:var(--amber);
+  font-weight:600;
+}
+.metric span{font-family:var(--font-mono);font-size:.72rem;color:var(--ink-faint);letter-spacing:.03em;text-transform:uppercase;}
+
+/* ---------- PIPELINE (stations detail) ---------- */
+.section{padding:96px 0;}
+.section-head{max-width:640px;margin-bottom:56px;}
+.section-head .eyebrow{margin-bottom:14px;}
+.section-head h2{font-size:clamp(1.7rem,3.4vw,2.4rem);margin-bottom:14px;}
+.section-head p{font-size:1rem;}
+
+.stations{
+  display:grid;grid-template-columns:repeat(5,1fr);gap:0;
+  border:1px solid var(--hairline);
+  border-radius:4px;
+  overflow:hidden;
+}
+@media(max-width:960px){ .stations{grid-template-columns:1fr;} }
+.station{
+  padding:28px 22px;
+  border-right:1px solid var(--hairline);
+  background:var(--bg-panel);
+  position:relative;
+}
+.station:last-child{border-right:none;}
+@media(max-width:960px){ .station{border-right:none;border-bottom:1px solid var(--hairline);} .station:last-child{border-bottom:none;} }
+.station .num{
+  font-family:var(--font-mono);font-size:.72rem;color:var(--amber);
+  display:block;margin-bottom:16px;
+}
+.station .ico{
+  width:34px;height:34px;margin-bottom:16px;
+  color:var(--teal);
+}
+.station h4{
+  font-family:var(--font-body);font-size:.98rem;font-weight:600;color:var(--ink);
+  margin-bottom:8px;
+}
+.station p{font-size:.86rem;line-height:1.55;margin-bottom:14px;}
+.station .agent-tag{
+  display:inline-block;font-family:var(--font-mono);font-size:.68rem;
+  color:var(--teal);background:var(--teal-soft);
+  padding:4px 8px;border-radius:2px;letter-spacing:.02em;
+}
+
+/* ---------- CMS ECOSYSTEM ---------- */
+.tabs{display:flex;gap:6px;flex-wrap:wrap;border-bottom:1px solid var(--hairline);margin-bottom:34px;padding-bottom:0;}
+.tab{
+  font-family:var(--font-mono);font-size:.78rem;color:var(--ink-faint);
+  padding:12px 4px;margin-right:22px;
+  border-bottom:2px solid transparent;
+  cursor:pointer;background:none;border-top:none;border-left:none;border-right:none;
+  letter-spacing:.02em;text-transform:uppercase;
+}
+.tab.active{color:var(--ink);border-bottom-color:var(--amber);}
+.tab-panel{display:none;}
+.tab-panel.active{display:grid;}
+.tab-panel{grid-template-columns:repeat(3,1fr);gap:14px;}
+@media(max-width:700px){ .tab-panel{grid-template-columns:repeat(2,1fr);} }
+.cms-card{
+  border:1px solid var(--hairline);border-radius:4px;
+  padding:20px 18px;background:var(--bg-panel);
+  font-family:var(--font-display);font-weight:600;font-size:1rem;color:var(--ink);
+  display:flex;align-items:center;min-height:64px;
+  transition:border-color .2s ease, transform .2s ease;
+}
+.cms-card:hover{border-color:var(--amber);transform:translateY(-2px);}
+
+.ecosystem-layout{display:grid;grid-template-columns:1fr 280px;gap:48px;}
+@media(max-width:960px){ .ecosystem-layout{grid-template-columns:1fr;} }
+.matcher{
+  border:1px solid var(--hairline);border-radius:4px;
+  background:var(--bg-panel);padding:24px;
+  font-size:.85rem;height:fit-content;
+}
+.matcher h4{
+  font-family:var(--font-mono);font-size:.72rem;text-transform:uppercase;
+  letter-spacing:.08em;color:var(--amber);margin-bottom:16px;font-weight:600;
+}
+.matcher ul{list-style:none;margin:0;padding:0;}
+.matcher li{
+  padding:10px 0;border-bottom:1px solid var(--hairline);
+  color:var(--ink-dim);font-size:.85rem;line-height:1.5;
+}
+.matcher li:last-child{border-bottom:none;}
+.matcher li b{color:var(--ink);font-weight:600;}
+
+/* ---------- WHY / TRACTION ---------- */
+.why-grid{display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:start;}
+@media(max-width:900px){ .why-grid{grid-template-columns:1fr;gap:40px;} }
+.checklist{list-style:none;margin:24px 0 0;padding:0;}
+.checklist li{
+  display:flex;gap:12px;padding:13px 0;
+  border-bottom:1px solid var(--hairline);
+  font-size:.92rem;color:var(--ink-dim);
+}
+.checklist li:first-child{border-top:1px solid var(--hairline);}
+.checklist li .tick{color:var(--teal);font-family:var(--font-mono);flex-shrink:0;}
+
+.cta-panel{
+  background:var(--bg-panel);border:1px solid var(--hairline);border-radius:6px;
+  padding:36px;
+}
+.cta-panel h3{font-size:1.4rem;margin-bottom:12px;}
+.cta-panel > p{margin-bottom:24px;}
+.cta-panel .btn-primary{margin-right:12px;}
+.quote{
+  margin-top:28px;padding-top:24px;border-top:1px solid var(--hairline);
+  font-style:normal;
+}
+.quote p{font-size:.96rem;color:var(--ink);line-height:1.6;margin-bottom:14px;}
+.quote cite{font-style:normal;font-family:var(--font-mono);font-size:.74rem;color:var(--ink-faint);}
+.trust-row{display:flex;gap:22px;margin-top:26px;flex-wrap:wrap;}
+.trust-row span{
+  font-family:var(--font-mono);font-size:.72rem;color:var(--ink-faint);
+  display:flex;align-items:center;gap:6px;
+}
+.trust-row span::before{content:'—';color:var(--teal);}
+
+/* ---------- FOOTER ---------- */
+footer{border-top:1px solid var(--hairline);padding:40px 0;}
+.foot-row{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;}
+.foot-links{display:flex;gap:24px;font-size:.85rem;color:var(--ink-faint);flex-wrap:wrap;}
+.foot-links a:hover{color:var(--ink-dim);}
+.foot-copy{font-family:var(--font-mono);font-size:.72rem;color:var(--ink-faint);margin-top:20px;}
+
+@media (prefers-reduced-motion: reduce){
+  *{animation-duration:.001ms !important;animation-iteration-count:1 !important;}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <nav>
+      <div class="brand">
+        <span class="mark"></span>
+        <div>CONTENTFLOW AI<small>DIGITAL AUTOMATION AGENCY</small></div>
+      </div>
+      <div class="navlinks">
+        <a href="#pipeline">Pipeline</a>
+        <a href="#ecosystem">Platforms</a>
+        <a href="#why">Why Us</a>
+        <a href="#">Case Studies</a>
+        <a href="index.html">About</a>
+        <a href="index.html#contact">Contact</a>
+      </div>
+      <div class="navcta">
+        <a class="btn btn-outline" href="index.html#contact">Talk to an Expert</a>
+        <a class="btn btn-primary" href="index.html#contact">Book a Demo</a>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap">
+    <div class="hero-top">
+      <div>
+        <div class="eyebrow"><span class="led"></span> GENERATIVE AI AGENTS · CONTENT AUTOMATION</div>
+        <h1>Content in.<br><span class="accent">Products</span> out.</h1>
+        <div class="hero-lede">
+          <p>ContentFlow AI runs a standing crew of generative AI agents on top of your CMS — researching, writing, designing, building, publishing, and optimizing without waiting on a brief. You keep the strategy. The agents keep the pipeline moving, 24/7.</p>
+        </div>
+        <div class="hero-cta">
+          <a class="btn btn-primary" href="index.html#contact">Book a Demo →</a>
+          <a class="btn btn-outline" href="#pipeline">See the Pipeline</a>
+        </div>
+      </div>
+      <div class="hero-side">
+        <div class="stat"><b>80%+</b> faster from brief to published content</div>
+        <div class="stat"><b>60%</b> less manual production work</div>
+        <div class="stat"><b>3×</b> improvement in content performance</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="rail-section">
+  <div class="wrap">
+    <div class="rail-caption">
+      <h3>Live agent dispatch</h3>
+      <div class="readout" id="readout">SEO &amp; Research Agent — indexing 42 pages</div>
+    </div>
+
+    <svg class="rail-svg" viewBox="0 0 1180 190" xmlns="http://www.w3.org/2000/svg">
+      <line x1="60" y1="95" x2="1120" y2="95" class="rail-line"/>
+      <line x1="60" y1="95" x2="1120" y2="95" class="rail-line-active"/>
+
+      <!-- traveling pulse -->
+      <circle r="5" class="rail-pulse">
+        <animateMotion dur="6s" repeatCount="indefinite"
+          path="M60,95 L1120,95" />
+      </circle>
+
+      <!-- Station 1: Capture -->
+      <g>
+        <circle cx="140" cy="95" r="34" class="rail-node-bg"/>
+        <circle cx="140" cy="95" r="40" class="rail-node-ring"/>
+        <g transform="translate(124,79)" class="rail-icon">
+          <path d="M2 6 L14 6 L14 26 L2 26 Z"/>
+          <path d="M2 6 L8 1 L10 1 L16 6"/>
+        </g>
+        <text x="140" y="150" text-anchor="middle" class="rail-num">01</text>
+        <text x="140" y="167" text-anchor="middle" class="rail-label">Capture</text>
+        <text x="140" y="182" text-anchor="middle" class="rail-sub">into your CMS</text>
+      </g>
+
+      <!-- Station 2: Enrich -->
+      <g>
+        <circle cx="405" cy="95" r="34" class="rail-node-bg"/>
+        <circle cx="405" cy="95" r="40" class="rail-node-ring"/>
+        <g transform="translate(390,79)" class="rail-icon">
+          <path d="M8 0 L10 6 L16 8 L10 10 L8 16 L6 10 L0 8 L6 6 Z"/>
+        </g>
+        <text x="405" y="150" text-anchor="middle" class="rail-num">02</text>
+        <text x="405" y="167" text-anchor="middle" class="rail-label">Enrich</text>
+        <text x="405" y="182" text-anchor="middle" class="rail-sub">agents write &amp; design</text>
+      </g>
+
+      <!-- Station 3: Build -->
+      <g>
+        <circle cx="590" cy="95" r="34" class="rail-node-bg"/>
+        <circle cx="590" cy="95" r="40" class="rail-node-ring"/>
+        <g transform="translate(574,79)" class="rail-icon">
+          <circle cx="8" cy="8" r="3"/>
+          <path d="M8 0 L8 3 M8 13 L8 16 M0 8 L3 8 M13 8 L16 8 M2.3 2.3 L4.4 4.4 M11.6 11.6 L13.7 13.7 M2.3 13.7 L4.4 11.6 M11.6 4.4 L13.7 2.3"/>
+        </g>
+        <text x="590" y="150" text-anchor="middle" class="rail-num">03</text>
+        <text x="590" y="167" text-anchor="middle" class="rail-label">Build</text>
+        <text x="590" y="182" text-anchor="middle" class="rail-sub">pages, assets, flows</text>
+      </g>
+
+      <!-- Station 4: Publish -->
+      <g>
+        <circle cx="775" cy="95" r="34" class="rail-node-bg"/>
+        <circle cx="775" cy="95" r="40" class="rail-node-ring"/>
+        <g transform="translate(759,80)" class="rail-icon">
+          <path d="M0 15 L16 0 L10 15 L6 9 Z"/>
+        </g>
+        <text x="775" y="150" text-anchor="middle" class="rail-num">04</text>
+        <text x="775" y="167" text-anchor="middle" class="rail-label">Publish</text>
+        <text x="775" y="182" text-anchor="middle" class="rail-sub">web, app, social</text>
+      </g>
+
+      <!-- Station 5: Optimize -->
+      <g>
+        <circle cx="1040" cy="95" r="34" class="rail-node-bg"/>
+        <circle cx="1040" cy="95" r="40" class="rail-node-ring"/>
+        <g transform="translate(1023,80)" class="rail-icon">
+          <path d="M0 16 L0 0 M0 16 L16 16 M3 13 L7 8 L10 11 L15 4"/>
+        </g>
+        <text x="1040" y="150" text-anchor="middle" class="rail-num">05</text>
+        <text x="1040" y="167" text-anchor="middle" class="rail-label">Optimize</text>
+        <text x="1040" y="182" text-anchor="middle" class="rail-sub">agents monitor &amp; tune</text>
+      </g>
+    </svg>
+  </div>
+</section>
+
+<div class="metrics">
+  <div class="wrap">
+    <div class="metric"><b>80%+</b><span>Faster Content Production</span></div>
+    <div class="metric"><b>60%</b><span>Reduction in Manual Work</span></div>
+    <div class="metric"><b>3×</b><span>Content Performance Lift</span></div>
+    <div class="metric"><b>24/7</b><span>Agents On Shift</span></div>
+  </div>
+</div>
+
+<section class="section" id="pipeline">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="eyebrow"><span class="led"></span> THE PIPELINE</div>
+      <h2>Five stations. One continuous line.</h2>
+      <p>Content moves through the same rail every time — captured, enriched, built, published, and optimized — with a named agent responsible for each leg, so nothing sits waiting for a human to pick it up.</p>
+    </div>
+
+    <div class="stations">
+      <div class="station">
+        <span class="num">01</span>
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 9h18M5 9V5a1 1 0 011-1h12a1 1 0 011 1v4M4 9h16v11a1 1 0 01-1 1H5a1 1 0 01-1-1V9z"/></svg>
+        <h4>Capture &amp; Manage</h4>
+        <p>Collect and organize content from every source into your CMS, structured and ready for agents to work with.</p>
+      </div>
+      <div class="station">
+        <span class="num">02</span>
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2l1.5 4.5L18 8l-4.5 1.5L12 14l-1.5-4.5L6 8l4.5-1.5L12 2z"/><path d="M19 15l.7 2.1L22 18l-2.3.9L19 21l-.7-2.1L16 18l2.3-.9L19 15z"/></svg>
+        <h4>AI Enrichment</h4>
+        <p>Agents draft, summarize, translate, and generate media — matched to your brand voice and SEO targets.</p>
+        <span class="agent-tag">Content Creator + SEO Agent</span>
+      </div>
+      <div class="station">
+        <span class="num">03</span>
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg>
+        <h4>Automate &amp; Build</h4>
+        <p>Pages, landing experiences, and personalized flows get assembled automatically from enriched content.</p>
+        <span class="agent-tag">Personalization Agent</span>
+      </div>
+      <div class="station">
+        <span class="num">04</span>
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+        <h4>Publish Anywhere</h4>
+        <p>Ships to your website, app, marketplace, email, and social channels — in parallel, on schedule.</p>
+        <span class="agent-tag">Publishing &amp; Distribution Agent</span>
+      </div>
+      <div class="station">
+        <span class="num">05</span>
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg>
+        <h4>Analyze &amp; Optimize</h4>
+        <p>Performance is monitored continuously; agents adjust and re-run the loop without a re-brief.</p>
+        <span class="agent-tag">Analytics Agent</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="ecosystem">
+  <div class="wrap">
+    <div class="ecosystem-layout">
+      <div>
+        <div class="section-head" style="margin-bottom:36px;">
+          <div class="eyebrow"><span class="led"></span> ECOSYSTEM</div>
+          <h2>We plug into the CMS you already run.</h2>
+          <p>No migration required. Our agents connect directly to your existing platform, whatever it is.</p>
+        </div>
+
+        <div class="tabs" id="tabs">
+          <button class="tab active" data-tab="0">General Purpose</button>
+          <button class="tab" data-tab="1">E-commerce</button>
+          <button class="tab" data-tab="2">Enterprise</button>
+          <button class="tab" data-tab="3">Headless / API-first</button>
+          <button class="tab" data-tab="4">Developer / Publishing</button>
+        </div>
+
+        <div class="tab-panel active" data-panel="0">
+          <div class="cms-card">WordPress</div>
+          <div class="cms-card">Wix</div>
+          <div class="cms-card">Squarespace</div>
+        </div>
+        <div class="tab-panel" data-panel="1">
+          <div class="cms-card">Shopify</div>
+          <div class="cms-card">BigCommerce</div>
+          <div class="cms-card">WooCommerce</div>
+        </div>
+        <div class="tab-panel" data-panel="2">
+          <div class="cms-card">Adobe Experience Manager</div>
+          <div class="cms-card">Sitecore</div>
+          <div class="cms-card">Drupal</div>
+        </div>
+        <div class="tab-panel" data-panel="3">
+          <div class="cms-card">Contentful</div>
+          <div class="cms-card">Sanity</div>
+          <div class="cms-card">Strapi</div>
+        </div>
+        <div class="tab-panel" data-panel="4">
+          <div class="cms-card">Ghost</div>
+          <div class="cms-card">Webflow</div>
+        </div>
+      </div>
+
+      <aside class="matcher">
+        <h4>Quick Match</h4>
+        <ul>
+          <li><b>Easiest setup, huge plugin library</b><br>WordPress</li>
+          <li><b>Selling products online</b><br>Shopify</li>
+          <li><b>Pixel-perfect design control</b><br>Squarespace or Webflow</li>
+          <li><b>Custom, app-like experiences</b><br>Contentful, Sanity, or Strapi</li>
+          <li><b>Enterprise governance at scale</b><br>AEM, Sitecore, or Drupal</li>
+        </ul>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="why">
+  <div class="wrap">
+    <div class="why-grid">
+      <div>
+        <div class="eyebrow"><span class="led"></span> WHY BUSINESSES CHOOSE US</div>
+        <h2 style="margin-top:14px;">Built for teams that are done waiting on content.</h2>
+        <ul class="checklist">
+          <li><span class="tick">→</span> End-to-end automation, run by named AI agents, not black-box scripts</li>
+          <li><span class="tick">→</span> Faster time to market and lower operational cost per asset</li>
+          <li><span class="tick">→</span> Scalable, secure architecture built to grow with your catalog</li>
+          <li><span class="tick">→</span> Measurable ROI, with continuous optimization baked into the pipeline</li>
+          <li><span class="tick">→</span> One team fluent across CMS, generative AI, and automation</li>
+        </ul>
+      </div>
+
+      <div class="cta-panel">
+        <h3>Ready to automate your content journey?</h3>
+        <p>Let's map your current pipeline and show you where agents take over first.</p>
+        <a class="btn btn-primary" href="index.html#contact">Book a Demo →</a>
+        <a class="btn btn-outline" href="index.html#contact">Talk to an Expert</a>
+
+        <div class="quote">
+          <p>"We used to publish once a week. Now the agents ship content, pages, and campaigns daily — with half the headcount we had before."</p>
+          <cite>— VP OF MARKETING, SERIES B RETAIL PLATFORM</cite>
+        </div>
+
+        <div class="trust-row">
+          <span>No obligation</span>
+          <span>Expert consultation</span>
+          <span>Quick response</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-row">
+      <div class="brand">
+        <span class="mark"></span>
+        <div>CONTENTFLOW AI<small>DIGITAL AUTOMATION AGENCY</small></div>
+      </div>
+      <div class="foot-links">
+        <a href="#pipeline">Pipeline</a>
+        <a href="#ecosystem">Platforms</a>
+        <a href="#why">Why Us</a>
+        <a href="#">Case Studies</a>
+        <a href="index.html">About</a>
+        <a href="index.html#contact">Contact</a>
+      </div>
+    </div>
+    <div class="foot-copy">© 2026 ContentFlow AI — Content in. Products out.</div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  // tabs
+  const tabs = Array.from(document.querySelectorAll('.tab'));
+  const panels = Array.from(document.querySelectorAll('.tab-panel'));
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      tabs.forEach(t => t.classList.remove('active'));
+      panels.forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      document.querySelector('.tab-panel[data-panel="'+tab.dataset.tab+'"]').classList.add('active');
+    });
+  });
+
+  // live readout ticker
+  const lines = [
+    "SEO & Research Agent — indexing 42 pages",
+    "Content Creator Agent — drafting 6 product pages",
+    "Design & Media Agent — generating 3 hero images",
+    "Publishing Agent — deployed to 3 channels",
+    "Analytics Agent — flagged +18% engagement",
+    "Personalization Agent — building 2 audience variants"
+  ];
+  const readout = document.getElementById('readout');
+  let i = 0;
+  setInterval(() => {
+    i = (i+1) % lines.length;
+    readout.style.opacity = 0;
+    setTimeout(() => {
+      readout.textContent = lines[i];
+      readout.style.opacity = 1;
+    }, 300);
+  }, 3200);
+  readout.style.transition = 'opacity .3s ease';
+})();
+</script>
+
+</body>
+</html>

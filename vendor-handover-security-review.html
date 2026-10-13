@@ -7,139 +7,221 @@
 <title>Vendor Handover Case File</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
 <style>
-/* Layout: an incident case file. Sticky index on the left (wide screens), one reading column, command blocks as evidence exhibits. */
+/* Layout: dark case-file masthead, then a reading column with a sticky index; evidence (logs, commands) set as wrapped terminal blocks so nothing scrolls sideways. */
 :root{
-  --paper:#f3f5f7; --sheet:#ffffff; --ink:#15212b; --muted:#566573; --rule:#d5dce3;
-  --accent:#1d5e86; --accent-soft:#e3eef5;
-  --code-bg:#0f1a23; --code-fg:#dbe6ee; --code-dim:#7f94a5;
-  --high:#b3261e; --high-bg:#fbe9e7; --med:#9a5b00; --med-bg:#fdf1dc; --low:#2f6b3a; --low-bg:#e6f2e8; --info:#4b5b69; --info-bg:#eaeef2;
-  --f-display:"IBM Plex Sans Condensed","Arial Narrow",system-ui,sans-serif;
-  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --ink:#0F2137; --ink-2:#17304D; --signal:#F2A93B; --line:#6FA8DC;
+  --paper:#EEF1F4; --card:#FFFFFF; --text:#25303D; --muted:#5A6676; --rule:#D3DAE2; --accent:#1D5E9A; --tint:#E4ECF4;
+  --code-bg:#0F2137; --code-fg:#DCE6EF; --code-dim:#7F97AE;
+  --high:#B42318; --high-bg:#FDECEA; --med:#93560A; --med-bg:#FDF2DE; --low:#2B6B3B; --low-bg:#E5F2E8; --info:#47596B; --info-bg:#E8EEF3;
+  --f-display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans","Segoe UI",system-ui,-apple-system,sans-serif;
   --f-mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --paper:#0e161d; --sheet:#141f28; --ink:#e3eaf0; --muted:#97a8b6; --rule:#263642;
-  --accent:#7fb8dd; --accent-soft:#16303f;
-  --code-bg:#08111a; --code-fg:#d6e2ec; --code-dim:#6f8597;
-  --high:#ff8a80; --high-bg:#3a1714; --med:#f0b14f; --med-bg:#33250c; --low:#8fd19c; --low-bg:#13291a; --info:#b0bfcb; --info-bg:#1c2a35;
+  --paper:#0C1B2D; --card:#122640; --text:#DCE4EC; --muted:#9AA9BA; --rule:#24405F; --accent:#8DBDE8; --tint:#163152;
+  --code-bg:#07111D; --code-fg:#D6E2EC; --code-dim:#7189A0;
+  --high:#FF9A8F; --high-bg:#3B1A18; --med:#F2B45A; --med-bg:#33260E; --low:#8FD3A0; --low-bg:#14301F; --info:#B3C2CF; --info-bg:#1A3049;
   color-scheme:dark}}
 :root[data-theme="dark"]{
-  --paper:#0e161d; --sheet:#141f28; --ink:#e3eaf0; --muted:#97a8b6; --rule:#263642;
-  --accent:#7fb8dd; --accent-soft:#16303f;
-  --code-bg:#08111a; --code-fg:#d6e2ec; --code-dim:#6f8597;
-  --high:#ff8a80; --high-bg:#3a1714; --med:#f0b14f; --med-bg:#33250c; --low:#8fd19c; --low-bg:#13291a; --info:#b0bfcb; --info-bg:#1c2a35;
+  --paper:#0C1B2D; --card:#122640; --text:#DCE4EC; --muted:#9AA9BA; --rule:#24405F; --accent:#8DBDE8; --tint:#163152;
+  --code-bg:#07111D; --code-fg:#D6E2EC; --code-dim:#7189A0;
+  --high:#FF9A8F; --high-bg:#3B1A18; --med:#F2B45A; --med-bg:#33260E; --low:#8FD3A0; --low-bg:#14301F; --info:#B3C2CF; --info-bg:#1A3049;
   color-scheme:dark}
 
-*{box-sizing:border-box}
-body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.6;padding-inline:16px;padding-block:0}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--paper);color:var(--text);font:400 16px/1.65 var(--f-body);-webkit-font-smoothing:antialiased;overflow-x:hidden}
 a{color:var(--accent)}
-.wrap{max-width:1180px;margin:0 auto;display:grid;grid-template-columns:220px minmax(0,1fr);gap:48px;padding-block:40px 80px}
-@media (max-width:900px){.wrap{grid-template-columns:minmax(0,1fr);gap:24px}.index{display:none}}
+:focus-visible{outline:3px solid var(--signal);outline-offset:3px;border-radius:4px}
+code{font-family:var(--f-mono);font-size:.86em}
+p code,li code,td code,dd code{background:var(--tint);padding:1px 6px;border-radius:4px;overflow-wrap:anywhere}
 
-/* index */
-.index{position:sticky;top:calc(env(safe-area-inset-top,0px) + 24px);align-self:start;font-size:13.5px}
-.index .lbl{font-family:var(--f-display);text-transform:uppercase;letter-spacing:.12em;font-size:11.5px;color:var(--muted);margin-bottom:10px}
-.index ol{list-style:none;margin:0;padding:0;display:grid;gap:2px;border-left:1px solid var(--rule)}
-.index a{display:block;padding:5px 12px;color:var(--muted);text-decoration:none;border-left:2px solid transparent;margin-left:-1px}
-.index a:hover,.index a:focus-visible{color:var(--ink);border-left-color:var(--accent);outline:none}
+/* ---------- masthead ---------- */
+.mast{background:var(--ink);color:#E8EEF5;position:relative;overflow:hidden}
+.mast::before{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(111,168,220,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(111,168,220,.07) 1px,transparent 1px);background-size:32px 32px;mask-image:linear-gradient(110deg,transparent 35%,#000 85%);-webkit-mask-image:linear-gradient(110deg,transparent 35%,#000 85%)}
+.mast-in{position:relative;max-width:1180px;margin:0 auto;padding:56px 20px 0;display:grid;gap:22px}
+.tags{display:flex;flex-wrap:wrap;gap:8px}
+.tag{font:500 12px/1 var(--f-mono);letter-spacing:.04em;padding:7px 10px;border-radius:999px;border:1px solid rgba(111,168,220,.35);color:#C9D6E3}
+.tag.live{border-color:var(--signal);color:var(--signal)}
+.tag.live::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--signal);margin-right:7px;vertical-align:1px}
+h1{font:800 clamp(2.1rem,5.6vw,4rem)/1.02 var(--f-display);letter-spacing:-.02em;margin:0;color:#fff;max-width:17ch;text-wrap:balance}
+h1 em{font-style:normal;color:var(--signal)}
+.lede{font-size:clamp(1.02rem,1.6vw,1.15rem);color:#B9C8D8;max-width:64ch;margin:0}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));margin-top:16px;border-top:1px solid rgba(111,168,220,.22)}
+.stat{padding:22px 18px 26px;border-left:1px solid rgba(111,168,220,.22);display:grid;gap:4px;align-content:start}
+.stat:first-child{border-left:0;padding-left:0}
+.stat b{font:800 clamp(1.5rem,3vw,2.1rem)/1 var(--f-display);color:#fff;font-variant-numeric:tabular-nums}
+.stat b small{font-size:.5em;color:var(--signal);margin-left:4px;font-weight:700}
+.stat span{font-size:13.5px;color:#9FB2C6;line-height:1.4}
+@media (max-width:760px){.stats{grid-template-columns:1fr 1fr}.stat:nth-child(3){border-left:0;padding-left:0}.stat{border-top:1px solid rgba(111,168,220,.22)}}
 
-main{min-width:0;display:grid;gap:56px}
+/* ---------- body layout ---------- */
+.wrap{max-width:1180px;margin:0 auto;padding:48px 20px 80px;display:grid;grid-template-columns:200px minmax(0,1fr);gap:56px}
+@media (max-width:960px){.wrap{grid-template-columns:minmax(0,1fr);gap:0}.index{display:none}}
+.index{position:sticky;top:calc(env(safe-area-inset-top,0px) + 24px);align-self:start;font-size:14px}
+.index p{font:600 11.5px/1 var(--f-body);text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin:0 0 12px}
+.index ol{list-style:none;margin:0;padding:0;display:grid;gap:2px;counter-reset:i}
+.index a{display:flex;gap:10px;padding:6px 10px;border-radius:8px;color:var(--muted);text-decoration:none;counter-increment:i}
+.index a::before{content:counter(i,decimal-leading-zero);font:500 11.5px/1.9 var(--f-mono);color:var(--line)}
+.index a:hover,.index a.on{background:var(--card);color:var(--text)}
+.index a.on::before{color:var(--signal)}
 
-/* header */
-.file-head{display:grid;gap:18px;border-bottom:2px solid var(--ink);padding-bottom:28px}
-.stamp{display:flex;flex-wrap:wrap;gap:8px 18px;font-family:var(--f-mono);font-size:12.5px;color:var(--muted)}
-.stamp b{color:var(--ink);font-weight:500}
-h1{font-family:var(--f-display);font-weight:700;font-size:clamp(2rem,4.4vw,3.1rem);line-height:1.05;letter-spacing:-.01em;margin:0;text-wrap:balance;max-width:20ch}
-.lede{font-size:1.12rem;color:var(--muted);max-width:62ch;margin:0}
-.verdict{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1px;background:var(--rule);border:1px solid var(--rule)}
-.verdict div{background:var(--sheet);padding:14px 16px;display:grid;gap:2px}
-.verdict span{font-family:var(--f-display);text-transform:uppercase;letter-spacing:.1em;font-size:11px;color:var(--muted)}
-.verdict strong{font-family:var(--f-display);font-weight:600;font-size:1.05rem}
-
-/* sections */
-section{display:grid;gap:18px;scroll-margin-top:24px}
-h2{font-family:var(--f-display);font-weight:600;font-size:1.65rem;line-height:1.15;margin:0;display:flex;gap:14px;align-items:baseline;text-wrap:balance}
-h2 .no{font-family:var(--f-mono);font-size:.8rem;font-weight:500;color:var(--accent);border:1px solid var(--accent);padding:1px 7px;border-radius:3px;transform:translateY(-3px)}
-h3{font-family:var(--f-display);font-weight:600;font-size:1.15rem;margin:8px 0 0}
+main{min-width:0;display:grid;gap:72px}
+main > *{min-width:0}
+section{display:grid;gap:20px;scroll-margin-top:24px;min-width:0}
+section > *{min-width:0}
+.eyebrow{font:600 12px/1 var(--f-body);text-transform:uppercase;letter-spacing:.14em;color:var(--accent);margin:0}
+h2{font:700 clamp(1.6rem,3vw,2.15rem)/1.12 var(--f-display);letter-spacing:-.01em;margin:6px 0 0;text-wrap:balance}
+h3{font:700 1.12rem/1.3 var(--f-display);margin:0}
 p{margin:0;max-width:68ch}
-.prose{display:grid;gap:12px}
-ul.plain{margin:0;padding-left:1.1em;display:grid;gap:6px;max-width:68ch}
+.head{display:grid;gap:4px}
 
-/* anonymisation note */
-.anon{background:var(--accent-soft);border:1px solid var(--rule);padding:14px 16px;font-size:14.5px;display:grid;gap:8px}
-.anon table{border-collapse:collapse;font-size:13.5px}
-.anon td{padding:3px 14px 3px 0;vertical-align:top}
-.anon td:first-child{color:var(--muted)}
-code{font-family:var(--f-mono);font-size:.88em}
-p code,li code,td code{background:var(--info-bg);padding:1px 5px;border-radius:3px}
+/* ---------- anonymisation ---------- */
+.anon{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:24px;background:var(--card);border:1px solid var(--rule);border-radius:14px;padding:22px}
+.anon h3{margin-bottom:6px}
+.anon p{font-size:14.5px;color:var(--muted)}
+.anon dl{margin:0;display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px 16px;font-size:14px;align-content:start}
+.anon dt{color:var(--muted)}
+.anon dd{margin:0}
+@media (max-width:700px){.anon{grid-template-columns:minmax(0,1fr)}}
 
-/* environment */
-.env{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:0;border-top:1px solid var(--rule)}
-.env div{padding:12px 0;border-bottom:1px solid var(--rule);display:grid;gap:2px;padding-right:16px}
-.env dt{font-family:var(--f-display);text-transform:uppercase;letter-spacing:.1em;font-size:11px;color:var(--muted)}
-.env dd{margin:0;font-size:15px}
+/* ---------- environment ---------- */
+.stack{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:var(--rule);border:1px solid var(--rule);border-radius:14px;overflow:hidden}
+.stack div{background:var(--card);padding:16px 18px;display:grid;gap:4px}
+.stack dt{font:600 11.5px/1 var(--f-body);text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+.stack dd{margin:0;font-size:15px}
+@media (max-width:760px){.stack{grid-template-columns:minmax(0,1fr)}}
 
-/* timeline */
-.tl{list-style:none;margin:0;padding:0;display:grid;gap:0}
-.tl li{display:grid;grid-template-columns:96px minmax(0,1fr);gap:18px;padding:12px 0;border-bottom:1px dashed var(--rule)}
-.tl .t{font-family:var(--f-mono);font-size:13px;color:var(--accent);font-variant-numeric:tabular-nums;padding-top:2px}
+/* ---------- timeline ---------- */
+.tl{list-style:none;margin:0;padding:0;position:relative}
+.tl::before{content:"";position:absolute;left:7px;top:10px;bottom:10px;width:2px;background:linear-gradient(var(--line),var(--signal))}
+.tl li{position:relative;padding:0 0 22px 36px;display:grid;gap:2px}
+.tl li::before{content:"";position:absolute;left:0;top:6px;width:16px;height:16px;border-radius:50%;background:var(--paper);border:2px solid var(--line)}
+.tl li.key::before{background:var(--signal);border-color:var(--signal)}
+.tl .t{font:500 12.5px/1.4 var(--f-mono);color:var(--accent);font-variant-numeric:tabular-nums}
 .tl b{font-weight:600}
-@media (max-width:520px){.tl li{grid-template-columns:minmax(0,1fr);gap:2px}}
+.tl span.d{color:var(--muted);font-size:15px}
 
-/* findings */
-.findings{display:grid;gap:10px}
-.f{display:grid;grid-template-columns:86px minmax(0,1fr);gap:16px;background:var(--sheet);border:1px solid var(--rule);padding:14px 16px}
-.f h4{margin:0 0 4px;font-size:15.5px;font-weight:600}
-.f p{font-size:14.5px;color:var(--muted)}
-.sev{font-family:var(--f-display);font-weight:600;text-transform:uppercase;letter-spacing:.08em;font-size:11.5px;padding:4px 8px;border-radius:3px;align-self:start;text-align:center}
+/* ---------- findings ---------- */
+.sevbar{display:flex;height:10px;border-radius:999px;overflow:hidden;gap:2px}
+.sevbar i{display:block}
+.sevkey{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13.5px;color:var(--muted)}
+.sevkey span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px;background:var(--c)}
+.cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media (max-width:760px){.cards{grid-template-columns:minmax(0,1fr)}}
+.card{background:var(--card);border:1px solid var(--rule);border-radius:14px;padding:18px;display:grid;gap:8px;align-content:start}
+.card h4{margin:0;font:600 15.5px/1.35 var(--f-body)}
+.card p{font-size:14.5px;color:var(--muted)}
+.sev{justify-self:start;font:600 11px/1 var(--f-body);text-transform:uppercase;letter-spacing:.1em;padding:6px 9px;border-radius:999px}
 .sev.high{color:var(--high);background:var(--high-bg)}
 .sev.med{color:var(--med);background:var(--med-bg)}
 .sev.low{color:var(--low);background:var(--low-bg)}
 .sev.info{color:var(--info);background:var(--info-bg)}
-@media (max-width:520px){.f{grid-template-columns:minmax(0,1fr);gap:8px}.sev{justify-self:start}}
 
-/* decision table */
-.tbl{overflow-x:auto;border:1px solid var(--rule);background:var(--sheet)}
-table.d{border-collapse:collapse;width:100%;min-width:560px;font-size:14.5px}
-table.d th,table.d td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--rule);vertical-align:top}
-table.d th{font-family:var(--f-display);text-transform:uppercase;letter-spacing:.08em;font-size:11.5px;color:var(--muted);font-weight:600}
-table.d tr:last-child td{border-bottom:0}
+/* ---------- outage path ---------- */
+.path{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;counter-reset:hop}
+.hop{background:var(--card);border:1px solid var(--rule);border-radius:12px;padding:14px;display:grid;gap:6px;align-content:start;position:relative}
+.hop small{font:500 11px/1 var(--f-mono);color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.hop b{font:700 15px/1.25 var(--f-display)}
+.hop span{font-size:13px;color:var(--muted);line-height:1.4}
+.hop .st{font:600 12px/1 var(--f-body);justify-self:start;padding:5px 8px;border-radius:999px}
+.hop.ok .st{color:var(--low);background:var(--low-bg)}
+.hop.fault{border:2px solid var(--signal)}
+.hop.fault .st{color:var(--med);background:var(--med-bg)}
+@media (max-width:900px){.path{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:460px){.path{grid-template-columns:minmax(0,1fr)}}
+.callout{background:var(--tint);border-radius:12px;padding:16px 18px;font-size:15px;max-width:72ch}
 
-/* playbook */
-.phase{display:grid;gap:14px;padding-top:6px}
-.phase-head{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:baseline;border-bottom:1px solid var(--rule);padding-bottom:8px}
-.phase-head h3{margin:0}
-.phase-head span{font-size:13.5px;color:var(--muted)}
-.cmd{display:grid;gap:6px}
-.cmd .cap{display:flex;justify-content:space-between;gap:12px;align-items:center;font-size:14px}
-.cmd .cap b{font-weight:600}
-.cmd .tag{font-family:var(--f-mono);font-size:11px;color:var(--muted);border:1px solid var(--rule);padding:0 6px;border-radius:3px;white-space:nowrap}
-.block{position:relative;background:var(--code-bg);border-radius:4px}
-.block pre{margin:0;padding:14px 16px;overflow-x:auto;color:var(--code-fg);font-family:var(--f-mono);font-size:13px;line-height:1.55;white-space:pre}
-.block .c{color:var(--code-dim)}
-.copy{position:absolute;top:8px;right:8px;font-family:var(--f-display);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;background:transparent;color:var(--code-dim);border:1px solid #3a4c5a;border-radius:3px;padding:3px 8px;cursor:pointer}
-.copy:hover,.copy:focus-visible{color:var(--code-fg);border-color:var(--code-fg);outline:none}
-.block pre{padding-right:78px}
-.note{font-size:14px;color:var(--muted)}
-.warn{border-left:3px solid var(--med);background:var(--med-bg);padding:10px 14px;font-size:14.5px;max-width:72ch}
+/* ---------- tables ---------- */
+.tbl{overflow-x:auto;background:var(--card);border:1px solid var(--rule);border-radius:14px}
+table{border-collapse:collapse;width:100%;font-size:14.5px}
+th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--rule);vertical-align:top}
+th{font:600 11.5px/1.3 var(--f-body);text-transform:uppercase;letter-spacing:.08em;color:var(--muted);background:var(--tint)}
+tr:last-child td{border-bottom:0}
+td.up{color:var(--low);font-weight:600}
+td.down{color:var(--high);font-weight:600}
+@media (max-width:560px){
+  .stacktbl thead{display:none}
+  .stacktbl tr{display:grid;border-bottom:1px solid var(--rule);padding:8px 0}
+  .stacktbl tr:last-child{border-bottom:0}
+  .stacktbl td{border:0;padding:4px 14px;display:grid;grid-template-columns:110px minmax(0,1fr);gap:10px}
+  .stacktbl td::before{content:attr(data-l);font:600 11px/1.6 var(--f-body);text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+}
 
-/* checklist */
-.check{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px}
-.check li{background:var(--sheet);border:1px solid var(--rule);padding:12px 14px 12px 40px;position:relative;font-size:14.5px}
-.check li::before{content:"";position:absolute;left:14px;top:15px;width:14px;height:14px;border:1.5px solid var(--accent);border-radius:2px}
-.check b{display:block;font-weight:600;margin-bottom:2px}
+/* ---------- accounts ---------- */
+.steps{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;counter-reset:s}
+.steps li{background:var(--card);border:1px solid var(--rule);border-radius:14px;padding:16px;display:grid;gap:6px;align-content:start;counter-increment:s}
+.steps li::before{content:counter(s);width:28px;height:28px;border-radius:50%;background:var(--ink);color:var(--signal);font:700 13px/28px var(--f-display);text-align:center}
+.steps b{font:700 15px/1.3 var(--f-display)}
+.steps span{font-size:14px;color:var(--muted)}
+@media (max-width:900px){.steps{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:460px){.steps{grid-template-columns:minmax(0,1fr)}}
 
-footer{border-top:2px solid var(--ink);padding-top:16px;font-size:13px;color:var(--muted);display:grid;gap:6px}
-@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
-html{scroll-behavior:smooth}
+/* ---------- playbook ---------- */
+.pb-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.btn{font:600 13.5px/1 var(--f-body);padding:9px 14px;border-radius:999px;border:1.5px solid var(--rule);background:var(--card);color:var(--text);cursor:pointer}
+.btn:hover{border-color:var(--accent)}
+.legend{display:flex;flex-wrap:wrap;gap:8px;font-size:13px;color:var(--muted)}
+.kind{font:500 11px/1 var(--f-mono);padding:4px 7px;border-radius:5px;background:var(--tint);color:var(--accent);white-space:nowrap}
+.kind.sql{color:var(--med);background:var(--med-bg)}
+.kind.cfg{color:var(--low);background:var(--low-bg)}
+details.phase{background:var(--card);border:1px solid var(--rule);border-radius:14px;min-width:0}
+details.phase + details.phase{margin-top:10px}
+details.phase summary{list-style:none;cursor:pointer;padding:16px 18px;display:grid;grid-template-columns:36px minmax(0,1fr) auto;gap:14px;align-items:center}
+details.phase summary::-webkit-details-marker{display:none}
+.ph-l{width:36px;height:36px;border-radius:10px;background:var(--ink);color:var(--signal);font:800 16px/36px var(--f-display);text-align:center}
+.ph-t{display:grid;gap:1px;min-width:0}
+.ph-t b{font:700 16px/1.3 var(--f-display)}
+.ph-t span{font-size:13.5px;color:var(--muted)}
+.ph-n{font:500 12px/1 var(--f-mono);color:var(--muted);display:flex;align-items:center;gap:10px;white-space:nowrap}
+.ph-n::after{content:"";width:9px;height:9px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg) translateY(-3px);transition:transform .2s}
+details[open] .ph-n::after{transform:rotate(-135deg) translateY(-1px)}
+.ph-body{padding:0 18px 18px;display:grid;gap:18px;min-width:0;border-top:1px solid var(--rule);padding-top:18px}
+.cmd{display:grid;gap:8px;min-width:0}
+.cmd-cap{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;font-size:14.5px}
+.cmd-cap b{font-weight:600}
+.term{background:var(--code-bg);border-radius:10px;min-width:0;overflow:hidden}
+.term-bar{display:flex;align-items:center;justify-content:space-between;padding:7px 10px 7px 14px;border-bottom:1px solid rgba(127,151,174,.18)}
+.dots{display:flex;gap:6px}
+.dots i{width:9px;height:9px;border-radius:50%;background:#2B4460}
+.copy{font:600 11.5px/1 var(--f-body);letter-spacing:.04em;background:transparent;color:var(--code-dim);border:1px solid #2B4460;border-radius:6px;padding:5px 10px;cursor:pointer}
+.copy:hover{color:var(--code-fg);border-color:var(--code-dim)}
+.copy.ok{color:var(--signal);border-color:var(--signal)}
+.term pre{margin:0;padding:14px 16px 16px;color:var(--code-fg);font:400 13px/1.6 var(--f-mono);white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;tab-size:2}
+.term .c{color:var(--code-dim)}
+.note{font-size:13.5px;color:var(--muted);max-width:72ch}
+
+/* ---------- checklist ---------- */
+.check{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.check li{background:var(--card);border:1px solid var(--rule);border-radius:12px;padding:14px 16px 14px 48px;position:relative;font-size:14.5px;color:var(--muted)}
+.check li b{display:block;color:var(--text);font-weight:600;margin-bottom:2px}
+.check input{position:absolute;left:16px;top:16px;width:18px;height:18px;accent-color:var(--signal);cursor:pointer}
+@media (max-width:700px){.check{grid-template-columns:minmax(0,1fr)}}
+
+footer{max-width:1180px;margin:0 auto;padding:22px 20px 40px;border-top:1px solid var(--rule);font-size:13px;color:var(--muted);display:grid;gap:4px}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important}}
 </style>
 </head>
 <body>
+<header class="mast">
+  <div class="mast-in">
+    <div class="tags"><span class="tag live">Contained</span><span class="tag">Case WP-HO-01</span><span class="tag">WordPress · IIS · MySQL</span><span class="tag">Anonymised</span></div>
+    <h1>The vendor left. Their <em>admin accounts</em> didn't.</h1>
+    <p class="lede">A WordPress site on Windows Server and IIS was handed over by a software agency. A brief outage prompted a health check, which turned up two agency Administrator accounts still active, admin logins over plain HTTP, and several hardening gaps. This case file records what was found, how it was traced, and every command used.</p>
+    <div class="stats">
+      <div class="stat"><b>0</b><span>Indicators of compromise found</span></div>
+      <div class="stat"><b>2<small>accounts</small></b><span>Vendor admins disabled, fully restorable</span></div>
+      <div class="stat"><b>4<small>logs</small></b><span>Correlated to place the outage outside the server</span></div>
+      <div class="stat"><b>11<small>phases</small></b><span>In the reusable command playbook</span></div>
+    </div>
+  </div>
+</header>
+
 <div class="wrap">
   <nav class="index" aria-label="Contents">
-    <div class="lbl">Case file</div>
+    <p>Case file</p>
     <ol>
       <li><a href="#summary">Summary</a></li>
       <li><a href="#environment">Environment</a></li>
@@ -147,247 +229,261 @@ html{scroll-behavior:smooth}
       <li><a href="#findings">Findings</a></li>
       <li><a href="#outage">The outage</a></li>
       <li><a href="#accounts">Vendor accounts</a></li>
-      <li><a href="#playbook">Command playbook</a></li>
+      <li><a href="#playbook">Playbook</a></li>
       <li><a href="#handover">Hand-over checklist</a></li>
     </ol>
   </nav>
 
   <main>
-    <header class="file-head">
-      <div class="stamp"><span>Case <b>WP-HO-01</b></span><span>Type <b>Post-handover security review</b></span><span>Status <b>Contained</b></span><span>Data <b>Anonymised</b></span></div>
-      <h1>The vendor left. Their admin accounts didn't.</h1>
-      <p class="lede">A WordPress site on Windows Server and IIS was handed over by a software agency. A brief outage prompted a health check, which turned up two agency administrator accounts still active, admin logins over plain HTTP, and a handful of hardening gaps. This file records what was found, how, and every command used.</p>
-      <div class="verdict">
-        <div><span>Compromise found</span><strong>No evidence</strong></div>
-        <div><span>Exposed admin accounts</span><strong>2 disabled, backed up</strong></div>
-        <div><span>Outage cause</span><strong>Outside the server</strong></div>
-        <div><span>Data loss</span><strong>None</strong></div>
-      </div>
-    </header>
-
     <section id="summary">
-      <h2><span class="no">01</span>Summary</h2>
-      <div class="prose">
-        <p>The site went down for a short period and recovered on its own. While investigating, the team reviewed who could administer WordPress and found two Administrator accounts belonging to the agency that originally built the site. One had been created years earlier; the other had installed a plugin only a couple of weeks before the review.</p>
-        <p>Neither account showed signs of malicious use. The risk was the access itself: full control of the site held by a third party with no active engagement, used over unencrypted connections to the server's raw IP address. Both accounts were disabled in place, with their data backed up so access can be restored if the agency is re-engaged.</p>
-      </div>
+      <div class="head"><p class="eyebrow">Summary</p><h2>Full site control, held by a third party nobody was watching</h2></div>
+      <p>The site went down briefly and recovered on its own. While investigating, the team reviewed who could administer WordPress and found two Administrator accounts belonging to the agency that built the site. One dated from the original build; the other had installed a plugin only two weeks before the review, with no change record on the client side.</p>
+      <p>Neither account showed signs of malicious use. The risk was the access itself, used over unencrypted connections to the server's raw IP address. Both accounts were disabled in place, with their data backed up so access can be restored exactly if the agency is re-engaged.</p>
       <div class="anon">
-        <strong>How this page is anonymised</strong>
-        <p>Every identifying value has been replaced. Domains use the reserved <code>example.com</code>, IPs use documentation ranges, and dates are given as days relative to the review.</p>
-        <table>
-          <tr><td>Website</td><td><code>www.example.com</code></td></tr>
-          <tr><td>Public IP</td><td><code>203.0.113.10</code> (internal <code>10.0.0.10</code>)</td></tr>
-          <tr><td>Agency</td><td>"the Vendor", <code>vendor.example</code></td></tr>
-          <tr><td>Vendor accounts</td><td><code>vendor_ai</code> (ID 12), <code>vendor_dev</code> (ID 4)</td></tr>
-          <tr><td>Database</td><td><code>site_db</code>, table prefix <code>wp_</code></td></tr>
-        </table>
+        <div><h3>How this page is anonymised</h3><p>Every identifying value has been replaced. Domains use the reserved <code>example.com</code>, IP addresses use documentation ranges, and dates are counted in days from the review.</p></div>
+        <dl>
+          <dt>Website</dt><dd><code>www.example.com</code></dd>
+          <dt>Public IP</dt><dd><code>203.0.113.10</code></dd>
+          <dt>Agency</dt><dd>"the Vendor", <code>vendor.example</code></dd>
+          <dt>Accounts</dt><dd><code>vendor_ai</code> (ID 12), <code>vendor_dev</code> (ID 4)</dd>
+          <dt>Database</dt><dd><code>site_db</code>, prefix <code>wp_</code></dd>
+        </dl>
       </div>
     </section>
 
     <section id="environment">
-      <h2><span class="no">02</span>Environment</h2>
-      <dl class="env">
+      <div class="head"><p class="eyebrow">Environment</p><h2>The stack</h2></div>
+      <dl class="stack">
         <div><dt>Host</dt><dd>VM on a VMware cloud, 8 GB RAM</dd></div>
-        <div><dt>OS</dt><dd>Windows Server (Desktop Experience)</dd></div>
-        <div><dt>Web server</dt><dd>IIS, WordPress as an application at <code>/wordpress</code> under Default Web Site</dd></div>
-        <div><dt>PHP</dt><dd>FastCGI (php-cgi)</dd></div>
-        <div><dt>Database</dt><dd>MySQL Server 8.0.x, local service <code>MySQL80</code></dd></div>
-        <div><dt>Protection</dt><dd>Microsoft Defender only, no web application firewall</dd></div>
+        <div><dt>Operating system</dt><dd>Windows Server, Desktop Experience</dd></div>
+        <div><dt>Web server</dt><dd>IIS, WordPress as the <code>/wordpress</code> application</dd></div>
+        <div><dt>Runtime</dt><dd>PHP via FastCGI</dd></div>
+        <div><dt>Database</dt><dd>MySQL 8.0.x, service <code>MySQL80</code></dd></div>
+        <div><dt>Protection</dt><dd>Microsoft Defender only, no web firewall</dd></div>
       </dl>
     </section>
 
     <section id="timeline">
-      <h2><span class="no">03</span>Timeline</h2>
+      <div class="head"><p class="eyebrow">Timeline</p><h2>From outage to containment in under a day</h2></div>
       <ol class="tl">
-        <li><span class="t">Day −830</span><div><b><code>vendor_dev</code> created</b> as Administrator, likely when the agency built the site.</div></li>
-        <li><span class="t">Day −13</span><div><b><code>vendor_ai</code> installs a ticketing plugin.</b> Two pages are auto-created under its name, through <code>http://203.0.113.10</code>.</div></li>
-        <li><span class="t">Day 0 · 13:10</span><div><b>Site unreachable for a short period,</b> then recovers. MySQL shows a clean restart at the same minute.</div></li>
-        <li><span class="t">Day 0 · 13:30</span><div><b>Server health review.</b> Memory at 72% with browser, code editor and a download manager running on the server. Download manager removed.</div></li>
-        <li><span class="t">Day 0 · 13:40</span><div><b>Logs checked.</b> No IIS 5xx errors, no app-pool failures, clean MySQL shutdowns. Outage attributed to something outside the server.</div></li>
-        <li><span class="t">Day 0 · 13:55</span><div><b>Uptime monitoring</b> set up from outside (website, keyword and port checks).</div></li>
-        <li><span class="t">Day 0 · 16:40</span><div><b>External compromise review.</b> Clean page content, clean sitemap, no spam indexed. Public user list exposes three accounts, two unknown.</div></li>
-        <li><span class="t">Day 0 · 17:15</span><div><b>Unknown accounts traced</b> to the Vendor by their email domain.</div></li>
-        <li><span class="t">Day 1 · 09:40</span><div><b>Both vendor accounts backed up and disabled</b> directly in MySQL. Public HTTP binding removed; localhost-only HTTP kept for server-side admin.</div></li>
+        <li><span class="t">Day −830</span><span class="d"><b><code>vendor_dev</code> created</b> as Administrator during the original build.</span></li>
+        <li><span class="t">Day −13</span><span class="d"><b><code>vendor_ai</code> installs a ticketing plugin.</b> Two pages are auto-created under its name via <code>http://203.0.113.10</code>.</span></li>
+        <li class="key"><span class="t">Day 0 · 13:10</span><span class="d"><b>Site unreachable briefly,</b> then recovers. MySQL shows a clean restart at the same minute.</span></li>
+        <li><span class="t">Day 0 · 13:30</span><span class="d"><b>Server health review.</b> Memory at 72%, with a browser, code editor and download manager running on the server.</span></li>
+        <li><span class="t">Day 0 · 13:40</span><span class="d"><b>Logs correlated.</b> No IIS 5xx, no app-pool failures, clean MySQL shutdowns.</span></li>
+        <li><span class="t">Day 0 · 13:55</span><span class="d"><b>External uptime monitoring</b> set up: website, keyword and port checks.</span></li>
+        <li class="key"><span class="t">Day 0 · 16:40</span><span class="d"><b>Compromise review.</b> Content and search index clean; public user list exposes two unknown accounts.</span></li>
+        <li><span class="t">Day 0 · 17:15</span><span class="d"><b>Accounts traced</b> to the Vendor by their email domain.</span></li>
+        <li class="key"><span class="t">Day 1 · 09:40</span><span class="d"><b>Both accounts backed up and disabled</b> in MySQL. Public HTTP closed; localhost-only HTTP kept for admin.</span></li>
       </ol>
     </section>
 
     <section id="findings">
-      <h2><span class="no">04</span>Findings</h2>
-      <div class="findings">
-        <div class="f"><span class="sev high">High</span><div><h4>Two vendor Administrator accounts still active</h4><p>Full site control held by a third party after hand-over. One account had installed a plugin two weeks earlier, with no change record on the client side.</p></div></div>
-        <div class="f"><span class="sev high">High</span><div><h4>Admin logins over plain HTTP to the raw IP</h4><p>Pages created via <code>http://203.0.113.10</code> show credentials were being sent unencrypted across the internet.</p></div></div>
-        <div class="f"><span class="sev med">Medium</span><div><h4>Usernames published by the REST API</h4><p><code>/wp-json/wp/v2/users</code> listed every author's login name, giving attackers half of each credential.</p></div></div>
-        <div class="f"><span class="sev med">Medium</span><div><h4>MySQL 8.0 past end of life</h4><p>No further security patches. The X Plugin also listened on all interfaces on port 33060.</p></div></div>
-        <div class="f"><span class="sev med">Medium</span><div><h4>No web application firewall</h4><p>Defender scans files on disk; nothing filtered login brute-forcing, plugin exploits or bad bots before they reached WordPress.</p></div></div>
-        <div class="f"><span class="sev low">Low</span><div><h4>Desktop software on a production server</h4><p>A browser and code editor used about 1.5 GB of the 8 GB, and a download manager of unknown licence origin was installed.</p></div></div>
-        <div class="f"><span class="sev low">Low</span><div><h4>Hard-coded IP links in the site</h4><p>Footer and social-sharing links pointed at the raw IP. They broke once public HTTP was removed.</p></div></div>
-        <div class="f"><span class="sev info">Info</span><div><h4>No signs of compromise from outside</h4><p>No spam content, hidden links, redirects or injected scripts; nothing suspicious indexed by search engines.</p></div></div>
+      <div class="head"><p class="eyebrow">Findings</p><h2>Eight findings, two of them high</h2></div>
+      <div class="sevbar" role="img" aria-label="2 high, 3 medium, 2 low, 1 informational">
+        <i style="flex:2;background:var(--high)"></i><i style="flex:3;background:var(--med)"></i><i style="flex:2;background:var(--low)"></i><i style="flex:1;background:var(--info)"></i>
+      </div>
+      <div class="sevkey"><span style="--c:var(--high)">2 High</span><span style="--c:var(--med)">3 Medium</span><span style="--c:var(--low)">2 Low</span><span style="--c:var(--info)">1 Info</span></div>
+      <div class="cards">
+        <div class="card"><span class="sev high">High</span><h4>Two vendor Administrator accounts still active</h4><p>Full site control held by a third party after hand-over, including a recent plugin install with no change record.</p></div>
+        <div class="card"><span class="sev high">High</span><h4>Admin logins over plain HTTP to the raw IP</h4><p>Pages created via <code>http://203.0.113.10</code> show credentials crossing the internet unencrypted.</p></div>
+        <div class="card"><span class="sev med">Medium</span><h4>Usernames published by the REST API</h4><p><code>/wp-json/wp/v2/users</code> listed every author's login name, giving attackers half of each credential.</p></div>
+        <div class="card"><span class="sev med">Medium</span><h4>MySQL 8.0 past end of life</h4><p>No further security patches, and the X Plugin listened on all interfaces on port 33060.</p></div>
+        <div class="card"><span class="sev med">Medium</span><h4>No web application firewall</h4><p>Defender scans files on disk; nothing filtered brute-force logins, plugin exploits or bad bots.</p></div>
+        <div class="card"><span class="sev low">Low</span><h4>Desktop software on a production server</h4><p>A browser and code editor used about 1.5 GB of 8 GB, and a download manager of unknown origin was installed.</p></div>
+        <div class="card"><span class="sev low">Low</span><h4>Hard-coded IP links in the site</h4><p>Footer and social-sharing links pointed at the raw IP and broke once public HTTP was removed.</p></div>
+        <div class="card"><span class="sev info">Info</span><h4>No signs of compromise from outside</h4><p>No spam content, hidden links, redirects or injected scripts, and nothing suspicious in the search index.</p></div>
       </div>
     </section>
 
     <section id="outage">
-      <h2><span class="no">05</span>The outage</h2>
-      <p>Each log answers a different question. Reading them in order narrowed the cause quickly.</p>
-      <div class="tbl"><table class="d">
-        <thead><tr><th>Source</th><th>Question</th><th>What it showed</th></tr></thead>
-        <tbody>
-          <tr><td>IIS access logs</td><td>Did the site return server errors?</td><td>No 5xx responses in 24 hours</td></tr>
-          <tr><td>HTTP.sys (HTTPERR)</td><td>Did the app pool crash or stall?</td><td>Only idle timeouts, client cancels and rejected bot requests</td></tr>
-          <tr><td>MySQL error log</td><td>Did the database crash?</td><td>Only clean "Normal shutdown" and "ready for connections" pairs</td></tr>
-          <tr><td>Windows event logs</td><td>Did a service or the VM restart?</td><td>Used to confirm restart times</td></tr>
-        </tbody>
-      </table></div>
-      <p>With no error recorded anywhere on the server, requests most likely never reached it: a network or VMware-side interruption. The fix was observability. External monitors now record the exact start and end of any future outage, and which layer failed.</p>
-      <div class="tbl"><table class="d">
+      <div class="head"><p class="eyebrow">The outage</p><h2>Every layer on the server reported healthy</h2></div>
+      <p>A request passes through five layers on its way to the database. Each layer on the server keeps its own log, and none of them recorded an error during the outage.</p>
+      <div class="path">
+        <div class="hop fault"><small>Layer 1</small><b>Network &amp; VMware</b><span>Provider network, NAT, VM host</span><span class="st">Likely cause</span></div>
+        <div class="hop ok"><small>Layer 2</small><b>HTTP.sys</b><span>HTTPERR log: only idle timeouts and bot noise</span><span class="st">No faults</span></div>
+        <div class="hop ok"><small>Layer 3</small><b>IIS</b><span>Access logs: zero 5xx in 24 hours</span><span class="st">No errors</span></div>
+        <div class="hop ok"><small>Layer 4</small><b>PHP</b><span>No app-pool crashes in WAS events</span><span class="st">No crashes</span></div>
+        <div class="hop ok"><small>Layer 5</small><b>MySQL</b><span>Only clean "Normal shutdown" entries</span><span class="st">Clean</span></div>
+      </div>
+      <p class="callout">With no error anywhere on the server, requests most likely never reached it. The lasting fix was observability: three external monitors now record the exact start and end of any future outage, and which layer failed.</p>
+      <div class="tbl"><table class="stacktbl">
         <thead><tr><th>Website</th><th>Keyword</th><th>Server port</th><th>Meaning</th></tr></thead>
         <tbody>
-          <tr><td>Down</td><td>Down</td><td>Down</td><td>Server, VM or network unreachable</td></tr>
-          <tr><td>Down</td><td>Down</td><td>Up</td><td>Server up; IIS or PHP failing</td></tr>
-          <tr><td>Up</td><td>Down</td><td>Up</td><td>Page loads but is wrong: database error, defacement, broken plugin</td></tr>
+          <tr><td data-l="Website" class="down">Down</td><td data-l="Keyword" class="down">Down</td><td data-l="Port" class="down">Down</td><td data-l="Meaning">Server, VM or network unreachable</td></tr>
+          <tr><td data-l="Website" class="down">Down</td><td data-l="Keyword" class="down">Down</td><td data-l="Port" class="up">Up</td><td data-l="Meaning">Server up; IIS or PHP failing</td></tr>
+          <tr><td data-l="Website" class="up">Up</td><td data-l="Keyword" class="down">Down</td><td data-l="Port" class="up">Up</td><td data-l="Meaning">Page loads but is wrong: database error, defacement, broken plugin</td></tr>
         </tbody>
       </table></div>
     </section>
 
     <section id="accounts">
-      <h2><span class="no">06</span>Vendor accounts</h2>
-      <div class="prose">
-        <p>WordPress has no "deactivate" button, and deleting a user forces you to reassign their content. The approach used here disables the account in place, so it can be restored exactly if the Vendor is re-engaged.</p>
-        <ul class="plain">
-          <li><b>Back up</b> the user's row and all of its metadata into side tables first.</li>
-          <li><b>Remove the role</b> so the account can do nothing.</li>
-          <li><b>End sessions and delete application passwords</b>, which is how AI tools and integrations usually log in.</li>
-          <li><b>Replace the password hash and email</b>, so neither login nor "Forgot password" can get back in.</li>
-        </ul>
-        <p>Before disabling, confirm you can log in with a remaining administrator, and check for access the vendor may hold outside WordPress.</p>
-      </div>
+      <div class="head"><p class="eyebrow">Vendor accounts</p><h2>Disable in place, keep a way back</h2></div>
+      <p>WordPress has no "deactivate" button, and deleting a user forces you to reassign their content. Disabling the account directly in the database removes all access while keeping the record, its pages and an exact restore path.</p>
+      <ol class="steps">
+        <li><b>Back up</b><span>Copy the user row and all its metadata into side tables.</span></li>
+        <li><b>Remove the role</b><span>Capabilities set to empty; user level set to 0.</span></li>
+        <li><b>Cut live access</b><span>Delete sessions and application passwords used by tools.</span></li>
+        <li><b>Lock the door</b><span>Replace the password hash and email so resets can't reach it.</span></li>
+      </ol>
+      <div class="tbl"><table class="stacktbl">
+        <thead><tr><th>Account</th><th>Owner</th><th>Before</th><th>After</th></tr></thead>
+        <tbody>
+          <tr><td data-l="Account"><code>admin</code></td><td data-l="Owner">Site owner</td><td data-l="Before">Administrator</td><td data-l="After" class="up">Administrator</td></tr>
+          <tr><td data-l="Account"><code>vendor_dev</code></td><td data-l="Owner">The Vendor</td><td data-l="Before">Administrator</td><td data-l="After" class="down">No role, backed up</td></tr>
+          <tr><td data-l="Account"><code>vendor_ai</code></td><td data-l="Owner">The Vendor</td><td data-l="Before">Administrator</td><td data-l="After" class="down">No role, backed up</td></tr>
+        </tbody>
+      </table></div>
     </section>
 
     <section id="playbook">
-      <h2><span class="no">07</span>Command playbook</h2>
-      <p>Every command used during the review, in the order a responder would need them. PowerShell commands run as Administrator on the server; SQL runs inside the MySQL client.</p>
+      <div class="head"><p class="eyebrow">Command playbook</p><h2>Every command used, in the order you'd need them</h2></div>
+      <p>PowerShell runs as Administrator on the server; SQL runs inside the MySQL client. Phases A to G only read. Phases H to K change configuration, so take a backup first.</p>
+      <div class="pb-bar">
+        <div class="legend"><span class="kind">PowerShell</span><span class="kind sql">SQL</span><span class="kind cfg">Config</span></div>
+        <div><button class="btn" type="button" id="toggleAll">Expand all phases</button></div>
+      </div>
 
-      <div class="phase">
-        <div class="phase-head"><h3>A. Health check scripts</h3><span>Read-only, write an HTML report</span></div>
-        <div class="cmd"><div class="cap"><b>Server health: system, VMware, IIS, PHP, MySQL, logs</b><span class="tag">PowerShell</span></div>
-<div class="block"><pre><code>powershell -ExecutionPolicy Bypass -File .\Check-WPServerHealth.ps1 -Url "https://www.example.com/wordpress/"</code></pre></div></div>
-        <div class="cmd"><div class="cap"><b>Compromise check: checksums, backdoors, users, logs</b><span class="tag">PowerShell</span></div>
-<div class="block"><pre><code>powershell -ExecutionPolicy Bypass -File .\Check-WPCompromise.ps1 -WpPath "C:\inetpub\wwwroot\wordpress" -Url "https://www.example.com/wordpress/"</code></pre></div>
+      <div>
+      <details class="phase" open>
+        <summary><span class="ph-l">A</span><span class="ph-t"><b>Health check scripts</b><span>One run each, HTML report at the end</span></span><span class="ph-n">2 cmds</span></summary>
+        <div class="ph-body">
+          <div class="cmd"><div class="cmd-cap"><b>Server health: system, VMware, IIS, PHP, MySQL, logs</b><span class="kind">PowerShell</span></div>
+<div class="term"><pre><code>powershell -ExecutionPolicy Bypass -File .\Check-WPServerHealth.ps1 -Url "https://www.example.com/wordpress/"</code></pre></div></div>
+          <div class="cmd"><div class="cmd-cap"><b>Compromise check: checksums, backdoors, users, logs</b><span class="kind">PowerShell</span></div>
+<div class="term"><pre><code>powershell -ExecutionPolicy Bypass -File .\Check-WPCompromise.ps1 -WpPath "C:\inetpub\wwwroot\wordpress" -Url "https://www.example.com/wordpress/"</code></pre></div>
 <p class="note">WordPress runs as an IIS application here, so pass its folder with <code>-WpPath</code>.</p></div>
-      </div>
+        </div>
+      </details>
 
-      <div class="phase">
-        <div class="phase-head"><h3>B. MySQL processes</h3><span>Is there more than one database instance?</span></div>
-        <div class="cmd"><div class="cap"><b>Each mysqld process, its parent and command line</b><span class="tag">PowerShell</span></div>
-<div class="block"><pre><code>Get-CimInstance Win32_Process -Filter "Name='mysqld.exe'" | Select-Object ProcessId, ParentProcessId, @{n='MemoryMB';e={[math]::Round($_.WorkingSetSize/1MB)}}, CreationDate, ExecutablePath, CommandLine | Format-List</code></pre></div>
-<p class="note">A small parent plus one large child, same path and config, is normal for MySQL 8 on Windows.</p></div>
-        <div class="cmd"><div class="cap"><b>Ports each instance listens on</b><span class="tag">PowerShell</span></div>
-<div class="block"><pre><code>Get-NetTCPConnection -State Listen | Where-Object OwningProcess -in (Get-Process mysqld).Id | Select-Object OwningProcess, LocalAddress, LocalPort | Sort-Object OwningProcess</code></pre></div></div>
-        <div class="cmd"><div class="cap"><b>Windows services that start MySQL</b><span class="tag">PowerShell</span></div>
-<div class="block"><pre><code>Get-CimInstance Win32_Service | Where-Object PathName -match 'mysqld' | Select-Object Name, State, StartMode, ProcessId, PathName | Format-List</code></pre></div></div>
-      </div>
+      <details class="phase">
+        <summary><span class="ph-l">B</span><span class="ph-t"><b>MySQL processes</b><span>Is there more than one database instance?</span></span><span class="ph-n">3 cmds</span></summary>
+        <div class="ph-body">
+          <div class="cmd"><div class="cmd-cap"><b>Each mysqld process, its parent and command line</b><span class="kind">PowerShell</span></div>
+<div class="term"><pre><code>Get-CimInstance Win32_Process -Filter "Name='mysqld.exe'" | Select-Object ProcessId, ParentProcessId, @{n='MemoryMB';e={[math]::Round($_.WorkingSetSize/1MB)}}, CreationDate, ExecutablePath, CommandLine | Format-List</code></pre></div>
+<p class="note">A small parent and one large child with the same path and config is normal for MySQL 8 on Windows.</p></div>
+          <div class="cmd"><div class="cmd-cap"><b>Ports each instance listens on</b><span class="kind">PowerShell</span></div>
+<div class="term"><pre><code>Get-NetTCPConnection -State Listen | Where-Object OwningProcess -in (Get-Process mysqld).Id | Select-Object OwningProcess, LocalAddress, LocalPort | Sort-Object OwningProcess</code></pre></div></div>
+          <div class="cmd"><div class="cmd-cap"><b>Windows services that start MySQL</b><span class="kind">PowerShell</span></div>
+<div class="term"><pre><code>Get-CimInstance Win32_Service | Where-Object PathName -match 'mysqld' | Select-Object Name, State, StartMode, ProcessId, PathName | Format-List</code></pre></div></div>
+        </div>
+      </details>
 
-      <div class="phase">
-        <div class="phase-head"><h3>C. VMware guest memory</h3><span>Is the host reclaiming RAM?</span></div>
-        <div class="cmd"><div class="cap"><b>Ballooned and swapped memory, limit and reservation</b><span class="tag">PowerShell</span></div>
-<div class="block"><pre><code>& "C:\Program Files\VMware\VMware Tools\VMwareToolboxCmd.exe" stat balloon
+      <details class="phase">
+        <summary><span class="ph-l">C</span><span class="ph-t"><b>VMware guest memory</b><span>Is the host taking RAM back from the VM?</span></span><span class="ph-n">2 cmds</span></summary>
+        <div class="ph-body">
+          <div class="cmd"><div class="cmd-cap"><b>Ballooned and swapped memory, limit and reservation</b><span class="kind">PowerShell</span></div>
+<div class="term"><pre><code>& "C:\Program Files\VMware\VMware Tools\VMwareToolboxCmd.exe" stat balloon
 & "C:\Program Files\VMware\VMware Tools\VMwareToolboxCmd.exe" stat swap
 & "C:\Program Files\VMware\VMware Tools\VMwareToolboxCmd.exe" stat memlimit
 & "C:\Program Files\VMware\VMware Tools\VMwareToolboxCmd.exe" stat memres</code></pre></div>
-<p class="note">Balloon and swap should read 0 MB.</p></div>
-        <div class="cmd"><div class="cap"><b>Fallback through performance counters</b><span class="tag">PowerShell</span></div>
-<div class="block"><pre><code>Get-Counter '\VM Memory\Memory Ballooned in MB','\VM Memory\Memory Swapped in MB','\VM Memory\Memory Limit in MB','\VM Memory\Memory Reservation in MB'</code></pre></div></div>
-      </div>
+<p class="note">Balloon and swap should both read 0 MB.</p></div>
+          <div class="cmd"><div class="cmd-cap"><b>Fallback through performance counters</b><span class="kind">PowerShell</span></div>
+<div class="term"><pre><code>Get-Counter '\VM Memory\Memory Ballooned in MB','\VM Memory\Memory Swapped in MB','\VM Memory\Memory Limit in MB','\VM Memory\Memory Reservation in MB'</code></pre></div></div>
+        </div>
+      </details>
 
-      <div class="phase">
-        <div class="phase-head"><h3>D. Outage triage</h3><span>Which layer failed, and when?</span></div>
-        <div class="cmd"><div class="cap"><b>Does the site answer from the server itself?</b><span class="tag">PowerShell</span></div>
-<div class="block"><pre><code>try { (Invoke-WebRequest 'https://www.example.com/wordpress/' -UseBasicParsing -TimeoutSec 30).StatusCode } catch { $_.Exception.Message }</code></pre></div></div>
-        <div class="cmd"><div class="cap"><b>IIS sites and app pools running?</b><span class="tag">PowerShell</span></div>
-<div class="block"><pre><code>Import-Module WebAdministration; Get-Website | Select-Object Name, State; Get-ChildItem IIS:\AppPools | Select-Object Name, State</code></pre></div></div>
-        <div class="cmd"><div class="cap"><b>Last boot and MySQL start time</b><span class="tag">PowerShell</span></div>
-<div class="block"><pre><code>"Boot: " + (Get-CimInstance Win32_OperatingSystem).LastBootUpTime; Get-Process mysqld | Select-Object Id, StartTime</code></pre></div></div>
-        <div class="cmd"><div class="cap"><b>Errors and warnings in the last 3 hours</b><span class="tag">PowerShell</span></div>
-<div class="block"><pre><code>Get-WinEvent -FilterHashtable @{LogName='System','Application'; Level=1,2,3; StartTime=(Get-Date).AddHours(-3)} | Select-Object TimeCreated, ProviderName, Id, @{n='Message';e={($_.Message -split "`n")[0]}} | Format-Table -AutoSize -Wrap</code></pre></div></div>
-        <div class="cmd"><div class="cap"><b>Server errors (5xx) per minute, last 24 hours</b><span class="tag">PowerShell</span></div>
-<div class="block"><pre><code>Get-ChildItem C:\inetpub\logs\LogFiles\W3SVC*\*.log | Where-Object LastWriteTime -gt (Get-Date).AddDays(-1) | Get-Content | ForEach-Object { if ($_ -match '^(\S+) (\d\d:\d\d):\d\d .* (5\d\d) \d+ \d+ \d+$') { "$($Matches[1]) $($Matches[2]) UTC  HTTP $($Matches[3])" } } | Group-Object | Select-Object Count, Name | Format-Table -AutoSize</code></pre></div>
-<p class="note">IIS logs are in UTC. Convert to local time before matching against the outage.</p></div>
-        <div class="cmd"><div class="cap"><b>HTTP.sys errors (app-pool crashes, queue full)</b><span class="tag">PowerShell</span></div>
-<div class="block"><pre><code>Get-ChildItem C:\Windows\System32\LogFiles\HTTPERR\*.log | Sort-Object LastWriteTime | Select-Object -Last 1 | Get-Content -Tail 40</code></pre></div></div>
-        <div class="cmd"><div class="cap"><b>Requests per minute around the outage</b><span class="tag">PowerShell</span></div>
-<div class="block"><pre><code>$d = (Get-Date).ToUniversalTime().ToString('yyyy-MM-dd'); Get-ChildItem C:\inetpub\logs\LogFiles\W3SVC*\*.log | Where-Object LastWriteTime -gt (Get-Date).AddHours(-3) | Get-Content | Where-Object { $_ -match "^$d 0[1-3]:" } | ForEach-Object { $p = $_.Split(' '); [pscustomobject]@{ Min = $p[1].Substring(0,5); Status = $p[-4] } } | Group-Object Min | ForEach-Object { '{0} UTC  {1,4} requests  {2}' -f $_.Name, $_.Count, (($_.Group | Group-Object Status | ForEach-Object { "$($_.Name)x$($_.Count)" }) -join ' ') }</code></pre></div>
+      <details class="phase">
+        <summary><span class="ph-l">D</span><span class="ph-t"><b>Outage triage</b><span>Which layer failed, and when?</span></span><span class="ph-n">10 cmds</span></summary>
+        <div class="ph-body">
+          <div class="cmd"><div class="cmd-cap"><b>Does the site answer from the server itself?</b><span class="kind">PowerShell</span></div>
+<div class="term"><pre><code>try { (Invoke-WebRequest 'https://www.example.com/wordpress/' -UseBasicParsing -TimeoutSec 30).StatusCode } catch { $_.Exception.Message }</code></pre></div></div>
+          <div class="cmd"><div class="cmd-cap"><b>IIS sites and app pools running?</b><span class="kind">PowerShell</span></div>
+<div class="term"><pre><code>Import-Module WebAdministration; Get-Website | Select-Object Name, State; Get-ChildItem IIS:\AppPools | Select-Object Name, State</code></pre></div></div>
+          <div class="cmd"><div class="cmd-cap"><b>Last boot and MySQL start time</b><span class="kind">PowerShell</span></div>
+<div class="term"><pre><code>"Boot: " + (Get-CimInstance Win32_OperatingSystem).LastBootUpTime; Get-Process mysqld | Select-Object Id, StartTime</code></pre></div></div>
+          <div class="cmd"><div class="cmd-cap"><b>Errors and warnings in the last 3 hours</b><span class="kind">PowerShell</span></div>
+<div class="term"><pre><code>Get-WinEvent -FilterHashtable @{LogName='System','Application'; Level=1,2,3; StartTime=(Get-Date).AddHours(-3)} | Select-Object TimeCreated, ProviderName, Id, @{n='Message';e={($_.Message -split "`n")[0]}} | Format-Table -AutoSize -Wrap</code></pre></div></div>
+          <div class="cmd"><div class="cmd-cap"><b>Server errors (5xx) per minute, last 24 hours</b><span class="kind">PowerShell</span></div>
+<div class="term"><pre><code>Get-ChildItem C:\inetpub\logs\LogFiles\W3SVC*\*.log | Where-Object LastWriteTime -gt (Get-Date).AddDays(-1) | Get-Content | ForEach-Object { if ($_ -match '^(\S+) (\d\d:\d\d):\d\d .* (5\d\d) \d+ \d+ \d+$') { "$($Matches[1]) $($Matches[2]) UTC  HTTP $($Matches[3])" } } | Group-Object | Select-Object Count, Name | Format-Table -AutoSize</code></pre></div>
+<p class="note">IIS logs are in UTC; convert to local time before matching against the outage.</p></div>
+          <div class="cmd"><div class="cmd-cap"><b>HTTP.sys errors: app-pool crashes, queue full</b><span class="kind">PowerShell</span></div>
+<div class="term"><pre><code>Get-ChildItem C:\Windows\System32\LogFiles\HTTPERR\*.log | Sort-Object LastWriteTime | Select-Object -Last 1 | Get-Content -Tail 40</code></pre></div></div>
+          <div class="cmd"><div class="cmd-cap"><b>Requests per minute around the outage</b><span class="kind">PowerShell</span></div>
+<div class="term"><pre><code>$d = (Get-Date).ToUniversalTime().ToString('yyyy-MM-dd'); Get-ChildItem C:\inetpub\logs\LogFiles\W3SVC*\*.log | Where-Object LastWriteTime -gt (Get-Date).AddHours(-3) | Get-Content | Where-Object { $_ -match "^$d 0[1-3]:" } | ForEach-Object { $p = $_.Split(' '); [pscustomobject]@{ Min = $p[1].Substring(0,5); Status = $p[-4] } } | Group-Object Min | ForEach-Object { '{0} UTC  {1,4} requests  {2}' -f $_.Name, $_.Count, (($_.Group | Group-Object Status | ForEach-Object { "$($_.Name)x$($_.Count)" }) -join ' ') }</code></pre></div>
 <p class="note">A gap in traffic during the outage means requests never reached the server.</p></div>
-        <div class="cmd"><div class="cap"><b>MySQL error log, last 40 lines and today only</b><span class="tag">PowerShell</span></div>
-<div class="block"><pre><code>Get-ChildItem 'C:\ProgramData\MySQL\MySQL Server 8.0\Data\*.err' | ForEach-Object { Get-Content $_.FullName -Tail 40 }
+          <div class="cmd"><div class="cmd-cap"><b>MySQL error log: last 40 lines, then today only</b><span class="kind">PowerShell</span></div>
+<div class="term"><pre><code>Get-ChildItem 'C:\ProgramData\MySQL\MySQL Server 8.0\Data\*.err' | ForEach-Object { Get-Content $_.FullName -Tail 40 }
 
 Get-ChildItem 'C:\ProgramData\MySQL\MySQL Server 8.0\Data\*.err' | Select-String -Pattern ('^' + (Get-Date).ToUniversalTime().ToString('yyyy-MM-dd')) | Select-Object -ExpandProperty Line</code></pre></div></div>
-        <div class="cmd"><div class="cap"><b>Windows' record of MySQL starting or stopping today</b><span class="tag">PowerShell</span></div>
-<div class="block"><pre><code>Get-WinEvent -FilterHashtable @{LogName='System'; ProviderName='Service Control Manager'; StartTime=(Get-Date).Date} | Where-Object Message -match 'MySQL' | Select-Object TimeCreated, Id, Message | Format-List</code></pre></div></div>
-        <div class="cmd"><div class="cap"><b>Where PHP writes its errors</b><span class="tag">PowerShell</span></div>
-<div class="block"><pre><code>$exe = (Get-Process php-cgi -ErrorAction SilentlyContinue | Select-Object -First 1).Path; if (-not $exe) { Import-Module WebAdministration; $exe = (Get-WebConfiguration 'system.webServer/fastCgi/application' -PSPath 'MACHINE/WEBROOT/APPHOST' | Select-Object -First 1).fullPath }; "PHP: $exe"; Select-String -Path (Join-Path (Split-Path $exe) 'php.ini') -Pattern '^\s*(error_log|log_errors|display_errors)'</code></pre></div></div>
-      </div>
+          <div class="cmd"><div class="cmd-cap"><b>Windows' record of MySQL starting or stopping today</b><span class="kind">PowerShell</span></div>
+<div class="term"><pre><code>Get-WinEvent -FilterHashtable @{LogName='System'; ProviderName='Service Control Manager'; StartTime=(Get-Date).Date} | Where-Object Message -match 'MySQL' | Select-Object TimeCreated, Id, Message | Format-List</code></pre></div></div>
+          <div class="cmd"><div class="cmd-cap"><b>Where PHP writes its errors</b><span class="kind">PowerShell</span></div>
+<div class="term"><pre><code>$exe = (Get-Process php-cgi -ErrorAction SilentlyContinue | Select-Object -First 1).Path; if (-not $exe) { Import-Module WebAdministration; $exe = (Get-WebConfiguration 'system.webServer/fastCgi/application' -PSPath 'MACHINE/WEBROOT/APPHOST' | Select-Object -First 1).fullPath }; "PHP: $exe"; Select-String -Path (Join-Path (Split-Path $exe) 'php.ini') -Pattern '^\s*(error_log|log_errors|display_errors)'</code></pre></div></div>
+        </div>
+      </details>
 
-      <div class="phase">
-        <div class="phase-head"><h3>E. Exposure checks</h3><span>What can the internet reach?</span></div>
-        <div class="cmd"><div class="cap"><b>Failed Windows logins in the last day (RDP brute-force)</b><span class="tag">PowerShell</span></div>
-<div class="block"><pre><code>(Get-WinEvent -FilterHashtable @{LogName='Security'; Id=4625; StartTime=(Get-Date).AddDays(-1)} -ErrorAction SilentlyContinue).Count</code></pre></div></div>
-        <div class="cmd"><div class="cap"><b>Firewall rules allowing risky ports in</b><span class="tag">PowerShell</span></div>
-<div class="block"><pre><code>Get-NetFirewallRule -Direction Inbound -Enabled True -Action Allow | ForEach-Object { $p = $_ | Get-NetFirewallPortFilter; $a = $_ | Get-NetFirewallAddressFilter; [pscustomobject]@{Rule=$_.DisplayName; Port=$p.LocalPort; From=($a.RemoteAddress -join ',')} } | Where-Object { $_.Port -match '3389|3306|33060|21|445|1433|5985' } | Format-Table -AutoSize</code></pre></div>
+      <details class="phase">
+        <summary><span class="ph-l">E</span><span class="ph-t"><b>Exposure checks</b><span>What can the internet reach?</span></span><span class="ph-n">3 cmds</span></summary>
+        <div class="ph-body">
+          <div class="cmd"><div class="cmd-cap"><b>Failed Windows logins in the last day (RDP brute-force)</b><span class="kind">PowerShell</span></div>
+<div class="term"><pre><code>(Get-WinEvent -FilterHashtable @{LogName='Security'; Id=4625; StartTime=(Get-Date).AddDays(-1)} -ErrorAction SilentlyContinue).Count</code></pre></div></div>
+          <div class="cmd"><div class="cmd-cap"><b>Firewall rules allowing risky ports in</b><span class="kind">PowerShell</span></div>
+<div class="term"><pre><code>Get-NetFirewallRule -Direction Inbound -Enabled True -Action Allow | ForEach-Object { $p = $_ | Get-NetFirewallPortFilter; $a = $_ | Get-NetFirewallAddressFilter; [pscustomobject]@{Rule=$_.DisplayName; Port=$p.LocalPort; From=($a.RemoteAddress -join ',')} } | Where-Object { $_.Port -match '3389|3306|33060|21|445|1433|5985' } | Format-Table -AutoSize</code></pre></div>
 <p class="note">Any rule with <code>From = Any</code> on these ports should be restricted.</p></div>
-        <div class="cmd"><div class="cap"><b>Public user list, checked from any browser</b><span class="tag">URL</span></div>
-<div class="block"><pre><code>https://www.example.com/wordpress/wp-json/wp/v2/users
+          <div class="cmd"><div class="cmd-cap"><b>Public user list and an account's pages, from any browser</b><span class="kind cfg">URL</span></div>
+<div class="term"><pre><code>https://www.example.com/wordpress/wp-json/wp/v2/users
 https://www.example.com/wordpress/wp-json/wp/v2/pages?author=12&per_page=50</code></pre></div></div>
-      </div>
+        </div>
+      </details>
 
-      <div class="phase">
-        <div class="phase-head"><h3>F. Log in to MySQL</h3><span>Values come from <code>wp-config.php</code></span></div>
-        <div class="cmd"><div class="cap"><b>Open the client and select the database</b><span class="tag">PowerShell → SQL</span></div>
-<div class="block"><pre><code>& "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u DB_USER -p
+      <details class="phase">
+        <summary><span class="ph-l">F</span><span class="ph-t"><b>Log in to MySQL</b><span>Credentials come from wp-config.php</span></span><span class="ph-n">1 cmd</span></summary>
+        <div class="ph-body">
+          <div class="cmd"><div class="cmd-cap"><b>Open the client and select the database</b><span class="kind sql">PowerShell → SQL</span></div>
+<div class="term"><pre><code>& "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u DB_USER -p
 
 USE site_db;
 SHOW TABLES LIKE '%users';</code></pre></div>
 <p class="note">If the table isn't <code>wp_users</code>, replace <code>wp_</code> everywhere below, including inside quoted meta keys.</p></div>
-      </div>
+        </div>
+      </details>
 
-      <div class="phase">
-        <div class="phase-head"><h3>G. Inspect accounts</h3><span>Read-only</span></div>
-        <div class="cmd"><div class="cap"><b>Every administrator</b><span class="tag">SQL</span></div>
-<div class="block"><pre><code>SELECT u.ID, u.user_login, u.user_email, u.user_registered FROM wp_users u
+      <details class="phase">
+        <summary><span class="ph-l">G</span><span class="ph-t"><b>Inspect accounts</b><span>Read-only, run before changing anything</span></span><span class="ph-n">2 cmds</span></summary>
+        <div class="ph-body">
+          <div class="cmd"><div class="cmd-cap"><b>Every administrator</b><span class="kind sql">SQL</span></div>
+<div class="term"><pre><code>SELECT u.ID, u.user_login, u.user_email, u.user_registered FROM wp_users u
 JOIN wp_usermeta m ON m.user_id = u.ID
 WHERE m.meta_key = 'wp_capabilities' AND m.meta_value LIKE '%administrator%';</code></pre></div></div>
-        <div class="cmd"><div class="cap"><b>One account, its role and app passwords</b><span class="tag">SQL</span></div>
-<div class="block"><pre><code>SELECT ID, user_login, user_email, user_registered FROM wp_users WHERE user_login = 'vendor_ai';
+          <div class="cmd"><div class="cmd-cap"><b>One account: role, sessions and app passwords</b><span class="kind sql">SQL</span></div>
+<div class="term"><pre><code>SELECT ID, user_login, user_email, user_registered FROM wp_users WHERE user_login = 'vendor_ai';
 
 SELECT meta_key, LEFT(meta_value, 200) AS value FROM wp_usermeta
 WHERE user_id = 12 AND meta_key IN ('wp_capabilities','session_tokens','_application_passwords');</code></pre></div>
-<p class="note">Application passwords record the name of the tool that used them, when, and from which IP. Read them before disabling.</p></div>
-      </div>
+<p class="note">Application passwords record the name of the tool that used them, when, and from which IP.</p></div>
+        </div>
+      </details>
 
-      <div class="phase">
-        <div class="phase-head"><h3>H. Back up, then disable</h3><span>Shown for <code>vendor_ai</code> (ID 12); repeat with ID 4</span></div>
-        <div class="cmd"><div class="cap"><b>Allow the backup tables to be created</b><span class="tag">SQL</span></div>
-<div class="block"><pre><code><span class="c">-- Fixes "ERROR 1067: Invalid default value for 'user_registered'". Session only.</span>
+      <details class="phase">
+        <summary><span class="ph-l">H</span><span class="ph-t"><b>Back up, then disable</b><span>Shown for vendor_ai (ID 12); repeat with ID 4</span></span><span class="ph-n">4 cmds</span></summary>
+        <div class="ph-body">
+          <div class="cmd"><div class="cmd-cap"><b>Allow the backup tables to be created</b><span class="kind sql">SQL</span></div>
+<div class="term"><pre><code><span class="c">-- Fixes "ERROR 1067: Invalid default value for 'user_registered'". Session only.</span>
 SET SESSION sql_mode = '';</code></pre></div></div>
-        <div class="cmd"><div class="cap"><b>Back up the user and its metadata</b><span class="tag">SQL</span></div>
-<div class="block"><pre><code>CREATE TABLE zz_backup_vendor_ai_user     AS SELECT * FROM wp_users    WHERE ID = 12;
+          <div class="cmd"><div class="cmd-cap"><b>Back up the user and its metadata</b><span class="kind sql">SQL</span></div>
+<div class="term"><pre><code>CREATE TABLE zz_backup_vendor_ai_user     AS SELECT * FROM wp_users    WHERE ID = 12;
 CREATE TABLE zz_backup_vendor_ai_usermeta AS SELECT * FROM wp_usermeta WHERE user_id = 12;
 
 SELECT ID, user_login, user_email FROM zz_backup_vendor_ai_user;
 SELECT COUNT(*) FROM zz_backup_vendor_ai_usermeta;</code></pre></div></div>
-        <div class="cmd"><div class="cap"><b>Disable the account</b><span class="tag">SQL</span></div>
-<div class="block"><pre><code>UPDATE wp_usermeta SET meta_value = 'a:0:{}' WHERE user_id = 12 AND meta_key = 'wp_capabilities';
+          <div class="cmd"><div class="cmd-cap"><b>Disable the account</b><span class="kind sql">SQL</span></div>
+<div class="term"><pre><code>UPDATE wp_usermeta SET meta_value = 'a:0:{}' WHERE user_id = 12 AND meta_key = 'wp_capabilities';
 UPDATE wp_usermeta SET meta_value = '0'      WHERE user_id = 12 AND meta_key = 'wp_user_level';
 DELETE FROM wp_usermeta WHERE user_id = 12 AND meta_key IN ('session_tokens', '_application_passwords');
 UPDATE wp_users SET user_pass = 'DISABLED', user_email = 'disabled-vendor-ai@invalid.local' WHERE ID = 12;</code></pre></div></div>
-        <div class="cmd"><div class="cap"><b>Verify</b><span class="tag">SQL</span></div>
-<div class="block"><pre><code>SELECT meta_key, meta_value FROM wp_usermeta WHERE user_id = 12 AND meta_key IN ('wp_capabilities','wp_user_level');
+          <div class="cmd"><div class="cmd-cap"><b>Verify</b><span class="kind sql">SQL</span></div>
+<div class="term"><pre><code>SELECT meta_key, meta_value FROM wp_usermeta WHERE user_id = 12 AND meta_key IN ('wp_capabilities','wp_user_level');
 <span class="c">-- Expect: a:0:{}  and  0</span>
 SELECT user_login, user_email, user_pass FROM wp_users WHERE ID = 12;</code></pre></div></div>
-      </div>
+        </div>
+      </details>
 
-      <div class="phase">
-        <div class="phase-head"><h3>I. Restore an account</h3><span>If the vendor is re-engaged</span></div>
-        <div class="cmd"><div class="cap"><b>Exact restore from the backup tables</b><span class="tag">SQL</span></div>
-<div class="block"><pre><code>UPDATE wp_users u JOIN zz_backup_vendor_ai_user b ON b.ID = u.ID
+      <details class="phase">
+        <summary><span class="ph-l">I</span><span class="ph-t"><b>Restore an account</b><span>If the vendor is re-engaged</span></span><span class="ph-n">2 cmds</span></summary>
+        <div class="ph-body">
+          <div class="cmd"><div class="cmd-cap"><b>Exact restore from the backup tables</b><span class="kind sql">SQL</span></div>
+<div class="term"><pre><code>UPDATE wp_users u JOIN zz_backup_vendor_ai_user b ON b.ID = u.ID
 SET u.user_pass = b.user_pass, u.user_email = b.user_email;
 
 UPDATE wp_usermeta m JOIN zz_backup_vendor_ai_usermeta b ON b.umeta_id = m.umeta_id
@@ -396,23 +492,25 @@ SET m.meta_value = b.meta_value;
 INSERT INTO wp_usermeta
 SELECT * FROM zz_backup_vendor_ai_usermeta b
 WHERE NOT EXISTS (SELECT 1 FROM wp_usermeta m WHERE m.umeta_id = b.umeta_id);</code></pre></div></div>
-        <div class="cmd"><div class="cap"><b>Partial restore without a backup</b><span class="tag">SQL</span></div>
-<div class="block"><pre><code>UPDATE wp_usermeta SET meta_value = 'a:1:{s:6:"editor";b:1;}' WHERE user_id = 12 AND meta_key = 'wp_capabilities';
+          <div class="cmd"><div class="cmd-cap"><b>Partial restore without a backup</b><span class="kind sql">SQL</span></div>
+<div class="term"><pre><code>UPDATE wp_usermeta SET meta_value = 'a:1:{s:6:"editor";b:1;}' WHERE user_id = 12 AND meta_key = 'wp_capabilities';
 UPDATE wp_usermeta SET meta_value = '7' WHERE user_id = 12 AND meta_key = 'wp_user_level';
 UPDATE wp_users SET user_email = 'contact@vendor.example' WHERE ID = 12;</code></pre></div>
 <p class="note">Then set a new password in wp-admin. Prefer Editor; grant Administrator only if they must install plugins.</p></div>
-      </div>
+        </div>
+      </details>
 
-      <div class="phase">
-        <div class="phase-head"><h3>J. IIS bindings and HTTPS</h3><span>Close public HTTP, keep server-side access</span></div>
-        <div class="cmd"><div class="cap"><b>Current bindings and WordPress application</b><span class="tag">PowerShell</span></div>
-<div class="block"><pre><code>Import-Module WebAdministration; Get-WebBinding -Name "Default Web Site" | Select-Object protocol, bindingInformation
+      <details class="phase">
+        <summary><span class="ph-l">J</span><span class="ph-t"><b>IIS bindings and HTTPS</b><span>Close public HTTP, keep server-side access</span></span><span class="ph-n">5 cmds</span></summary>
+        <div class="ph-body">
+          <div class="cmd"><div class="cmd-cap"><b>Current bindings and the WordPress application</b><span class="kind">PowerShell</span></div>
+<div class="term"><pre><code>Import-Module WebAdministration; Get-WebBinding -Name "Default Web Site" | Select-Object protocol, bindingInformation
 Get-WebApplication -Site "Default Web Site" | Select-Object path, PhysicalPath, applicationPool</code></pre></div></div>
-        <div class="cmd"><div class="cap"><b>HTTP for the server itself only</b><span class="tag">PowerShell</span></div>
-<div class="block"><pre><code>New-WebBinding -Name "Default Web Site" -Protocol http -Port 80 -IPAddress 127.0.0.1</code></pre></div>
+          <div class="cmd"><div class="cmd-cap"><b>HTTP for the server itself only</b><span class="kind">PowerShell</span></div>
+<div class="term"><pre><code>New-WebBinding -Name "Default Web Site" -Protocol http -Port 80 -IPAddress 127.0.0.1</code></pre></div>
 <p class="note">Restores <code>http://127.0.0.1/wordpress/wp-admin</code> on the server without exposing HTTP to the internet.</p></div>
-        <div class="cmd"><div class="cap"><b>Optional: public HTTP redirected to HTTPS, localhost exempt</b><span class="tag">web.config (site root)</span></div>
-<div class="block"><pre><code>&lt;rule name="Force HTTPS" stopProcessing="true"&gt;
+          <div class="cmd"><div class="cmd-cap"><b>Optional: redirect public HTTP to HTTPS, localhost exempt</b><span class="kind cfg">web.config</span></div>
+<div class="term"><pre><code>&lt;rule name="Force HTTPS" stopProcessing="true"&gt;
   &lt;match url="(.*)" /&gt;
   &lt;conditions&gt;
     &lt;add input="{HTTPS}" pattern="off" /&gt;
@@ -421,22 +519,24 @@ Get-WebApplication -Site "Default Web Site" | Select-Object path, PhysicalPath, 
   &lt;action type="Redirect" url="https://www.example.com/{R:1}" redirectType="Permanent" /&gt;
 &lt;/rule&gt;</code></pre></div>
 <p class="note">Goes in the Default Web Site root <code>web.config</code>, not the WordPress folder, which holds the permalink rules.</p></div>
-        <div class="cmd"><div class="cap"><b>Certificate expiry</b><span class="tag">PowerShell</span></div>
-<div class="block"><pre><code>Get-ChildItem Cert:\LocalMachine\My | Where-Object Subject -like '*example.com*' | Select-Object Subject, NotAfter, Issuer</code></pre></div></div>
-        <div class="cmd"><div class="cap"><b>Reach the public name from the server</b><span class="tag">hosts file</span></div>
-<div class="block"><pre><code><span class="c"># C:\Windows\System32\drivers\etc\hosts  (edit as Administrator)</span>
+          <div class="cmd"><div class="cmd-cap"><b>Certificate expiry</b><span class="kind">PowerShell</span></div>
+<div class="term"><pre><code>Get-ChildItem Cert:\LocalMachine\My | Where-Object Subject -like '*example.com*' | Select-Object Subject, NotAfter, Issuer</code></pre></div></div>
+          <div class="cmd"><div class="cmd-cap"><b>Reach the public name from the server</b><span class="kind cfg">hosts file</span></div>
+<div class="term"><pre><code><span class="c"># C:\Windows\System32\drivers\etc\hosts  (edit as Administrator)</span>
 127.0.0.1   www.example.com</code></pre></div></div>
-      </div>
+        </div>
+      </details>
 
-      <div class="phase">
-        <div class="phase-head"><h3>K. phpMyAdmin</h3><span>Find it, then lock it to the server</span></div>
-        <div class="cmd"><div class="cap"><b>Is it installed, and where?</b><span class="tag">PowerShell</span></div>
-<div class="block"><pre><code>Get-ChildItem C:\inetpub, C:\ -Directory -Recurse -Depth 3 -Filter '*phpmyadmin*' -ErrorAction SilentlyContinue | Select-Object FullName
+      <details class="phase">
+        <summary><span class="ph-l">K</span><span class="ph-t"><b>phpMyAdmin</b><span>Find it, then lock it to the server</span></span><span class="ph-n">3 cmds</span></summary>
+        <div class="ph-body">
+          <div class="cmd"><div class="cmd-cap"><b>Is it installed, and where?</b><span class="kind">PowerShell</span></div>
+<div class="term"><pre><code>Get-ChildItem C:\inetpub, C:\ -Directory -Recurse -Depth 3 -Filter '*phpmyadmin*' -ErrorAction SilentlyContinue | Select-Object FullName
 Import-Module WebAdministration; Get-WebApplication | Select-Object path, PhysicalPath; Get-WebVirtualDirectory | Select-Object path, PhysicalPath</code></pre></div></div>
-        <div class="cmd"><div class="cap"><b>Enable IP restrictions in IIS</b><span class="tag">PowerShell</span></div>
-<div class="block"><pre><code>Install-WindowsFeature Web-IP-Security; & "$env:windir\system32\inetsrv\appcmd.exe" unlock config -section:system.webServer/security/ipSecurity</code></pre></div></div>
-        <div class="cmd"><div class="cap"><b>Allow only the server itself</b><span class="tag">web.config (phpmyadmin folder)</span></div>
-<div class="block"><pre><code>&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+          <div class="cmd"><div class="cmd-cap"><b>Enable IP restrictions in IIS</b><span class="kind">PowerShell</span></div>
+<div class="term"><pre><code>Install-WindowsFeature Web-IP-Security; & "$env:windir\system32\inetsrv\appcmd.exe" unlock config -section:system.webServer/security/ipSecurity</code></pre></div></div>
+          <div class="cmd"><div class="cmd-cap"><b>Allow only the server itself</b><span class="kind cfg">web.config</span></div>
+<div class="term"><pre><code>&lt;?xml version="1.0" encoding="UTF-8"?&gt;
 &lt;configuration&gt;
   &lt;system.webServer&gt;
     &lt;security&gt;
@@ -447,52 +547,61 @@ Import-Module WebAdministration; Get-WebApplication | Select-Object path, Physic
     &lt;/security&gt;
   &lt;/system.webServer&gt;
 &lt;/configuration&gt;</code></pre></div>
-<p class="note">From outside, <code>/phpmyadmin</code> should now return 403.</p></div>
+<p class="note">Saved in the phpmyadmin folder. From outside, <code>/phpmyadmin</code> should now return 403.</p></div>
+        </div>
+      </details>
       </div>
     </section>
 
     <section id="handover">
-      <h2><span class="no">08</span>Hand-over checklist</h2>
-      <p>What to do on the day any agency or contractor hands a site back, so this case doesn't repeat.</p>
+      <div class="head"><p class="eyebrow">Hand-over checklist</p><h2>Ten things to do the day a vendor hands back a site</h2></div>
       <ul class="check">
-        <li><b>Inventory every admin</b>List all WordPress administrators and give each one a known owner.</li>
-        <li><b>Disable vendor accounts</b>Back up, remove the role, revoke app passwords, lock the password and email.</li>
-        <li><b>Rotate shared secrets</b>The main admin password, database password and any Windows logins the vendor knew.</li>
-        <li><b>Check access outside WordPress</b>Remote Desktop, FTP, hosting portal, domain and DNS, analytics and search console.</li>
-        <li><b>HTTPS only, by domain</b>No admin logins via the raw IP; public HTTP removed or redirected.</li>
-        <li><b>Hide usernames</b>Block the public users endpoint and rename the default <code>admin</code> account.</li>
-        <li><b>Put a firewall in front</b>A WAF such as a free CDN tier, plus a WordPress security plugin with two-factor login.</li>
-        <li><b>Monitor from outside</b>Website, keyword and port checks with email alerts.</li>
-        <li><b>Patch the stack</b>Windows, PHP, plugins, and a supported MySQL release.</li>
-        <li><b>Prove the backups</b>Daily database and file backups stored off the server, with a tested restore.</li>
+        <li><input type="checkbox" id="c1" aria-label="Inventory every admin"><b>Inventory every admin</b>List all WordPress administrators and give each a known owner.</li>
+        <li><input type="checkbox" id="c2" aria-label="Disable vendor accounts"><b>Disable vendor accounts</b>Back up, remove the role, revoke app passwords, lock password and email.</li>
+        <li><input type="checkbox" id="c3" aria-label="Rotate shared secrets"><b>Rotate shared secrets</b>Main admin, database and any Windows logins the vendor knew.</li>
+        <li><input type="checkbox" id="c4" aria-label="Check access outside WordPress"><b>Check access outside WordPress</b>Remote Desktop, FTP, hosting portal, domain and DNS, analytics.</li>
+        <li><input type="checkbox" id="c5" aria-label="HTTPS only"><b>HTTPS only, by domain</b>No admin logins via the raw IP; public HTTP removed or redirected.</li>
+        <li><input type="checkbox" id="c6" aria-label="Hide usernames"><b>Hide usernames</b>Block the public users endpoint and rename the default <code>admin</code>.</li>
+        <li><input type="checkbox" id="c7" aria-label="Put a firewall in front"><b>Put a firewall in front</b>A WAF in front of the site, plus two-factor login for wp-admin.</li>
+        <li><input type="checkbox" id="c8" aria-label="Monitor from outside"><b>Monitor from outside</b>Website, keyword and port checks with alerts.</li>
+        <li><input type="checkbox" id="c9" aria-label="Patch the stack"><b>Patch the stack</b>Windows, PHP, plugins, and a supported MySQL release.</li>
+        <li><input type="checkbox" id="c10" aria-label="Prove the backups"><b>Prove the backups</b>Daily database and file backups stored off the server, with a tested restore.</li>
       </ul>
     </section>
-
-    <footer>
-      <span>Case WP-HO-01 · anonymised for publication · all hostnames, addresses, names and dates are placeholders.</span>
-      <span>Commands are read-only except those in phases H, I, J and K, which change configuration and should follow a backup.</span>
-    </footer>
   </main>
 </div>
 
+<footer>
+  <span>Case WP-HO-01 · anonymised for publication · every hostname, address, name and date is a placeholder.</span>
+</footer>
+
 <script>
-document.querySelectorAll('.block').forEach(function(b){
-  var btn=document.createElement('button');
-  btn.className='copy';btn.type='button';btn.textContent='Copy';
-  btn.setAttribute('aria-label','Copy command');
-  btn.addEventListener('click',function(){
-    var text=b.querySelector('pre').innerText;
-    function done(msg){btn.textContent=msg;setTimeout(function(){btn.textContent='Copy'},1600)}
-    function fallback(){
-      var r=document.createRange();r.selectNodeContents(b.querySelector('pre'));
-      var s=window.getSelection();s.removeAllRanges();s.addRange(r);done('Selected');
-    }
-    try{
-      navigator.clipboard.writeText(text).then(function(){done('Copied')},fallback);
-    }catch(e){fallback()}
+(function(){
+  // copy buttons
+  document.querySelectorAll('.term').forEach(function(t){
+    var bar=document.createElement('div');bar.className='term-bar';
+    bar.innerHTML='<span class="dots"><i></i><i></i><i></i></span>';
+    var btn=document.createElement('button');btn.type='button';btn.className='copy';btn.textContent='Copy';
+    bar.appendChild(btn);t.insertBefore(bar,t.firstChild);
+    btn.addEventListener('click',function(){
+      var pre=t.querySelector('pre');
+      function done(m){btn.textContent=m;btn.classList.add('ok');setTimeout(function(){btn.textContent='Copy';btn.classList.remove('ok')},1600)}
+      function fallback(){var r=document.createRange();r.selectNodeContents(pre);var s=getSelection();s.removeAllRanges();s.addRange(r);done('Selected')}
+      try{navigator.clipboard.writeText(pre.innerText).then(function(){done('Copied')},fallback)}catch(e){fallback()}
+    });
   });
-  b.appendChild(btn);
-});
+  // expand / collapse all
+  var tg=document.getElementById('toggleAll'),ph=[].slice.call(document.querySelectorAll('details.phase'));
+  function sync(){var all=ph.every(function(d){return d.open});tg.textContent=all?'Collapse all phases':'Expand all phases'}
+  tg.addEventListener('click',function(){var all=ph.every(function(d){return d.open});ph.forEach(function(d){d.open=!all});sync()});
+  ph.forEach(function(d){d.addEventListener('toggle',sync)});
+  // index highlight
+  var links=[].slice.call(document.querySelectorAll('.index a'));
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){links.forEach(function(a){a.classList.toggle('on',a.getAttribute('href')==='#'+e.target.id)})}})},{rootMargin:'-30% 0px -60% 0px'});
+    document.querySelectorAll('main section').forEach(function(s){io.observe(s)});
+  }
+})();
 </script>
 </body>
 </html>

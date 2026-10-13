@@ -1,0 +1,769 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Case study: moving a WordPress site on IIS to HTTPS, tracing a TLS failure to a cloud NAT rule, and cleaning hard-coded addresses from MySQL.">
+<style>html{-webkit-text-size-adjust:100%}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Port 443 Case Study</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+/* Layout concept: a request trace. The page follows one HTTPS request from the visitor's browser,
+   through DNS, the cloud edge gateway, IIS and WordPress, down to MySQL, and logs what broke at each hop. */
+:root{
+  --paper:#eef2f5;
+  --surface:#ffffff;
+  --ink:#13202b;
+  --muted:#566574;
+  --line:#d3dbe2;
+  --accent:#b25a0c;
+  --accent-soft:#f6e6d4;
+  --good:#1d7f55;
+  --good-soft:#dcf1e6;
+  --bad:#b93a2d;
+  --bad-soft:#f8e1de;
+  --warn:#8a6a00;
+  --warn-soft:#f6eccb;
+  --code-bg:#0f1a24;
+  --code-fg:#d6e1ea;
+  --code-dim:#7f93a5;
+  --code-key:#f0a24a;
+  --code-str:#8fd1b0;
+
+  --f-display:"IBM Plex Sans Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"Cascadia Mono",Consolas,monospace;
+
+  --s-1:.75rem; --s0:.875rem; --s1:1rem; --s2:1.125rem; --s3:1.375rem; --s4:1.875rem; --s5:clamp(2.25rem,5.5vw,3.75rem);
+  --wrap:1080px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0d141b; --surface:#141e28; --ink:#e2e9ef; --muted:#93a4b3; --line:#25323e;
+    --accent:#f0a24a; --accent-soft:#3a2a17;
+    --good:#4cc38a; --good-soft:#15301f; --bad:#ef7a6d; --bad-soft:#3a1c19; --warn:#e3c35a; --warn-soft:#352c11;
+    --code-bg:#091017; --code-fg:#d6e1ea; --code-dim:#7f93a5; --code-key:#f0a24a; --code-str:#8fd1b0;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0d141b; --surface:#141e28; --ink:#e2e9ef; --muted:#93a4b3; --line:#25323e;
+  --accent:#f0a24a; --accent-soft:#3a2a17;
+  --good:#4cc38a; --good-soft:#15301f; --bad:#ef7a6d; --bad-soft:#3a1c19; --warn:#e3c35a; --warn-soft:#352c11;
+  --code-bg:#091017; --code-fg:#d6e1ea; --code-dim:#7f93a5; --code-key:#f0a24a; --code-str:#8fd1b0;
+  color-scheme:dark;
+}
+
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:var(--s1);line-height:1.6;}
+.wrap{max-width:var(--wrap);margin:0 auto;padding-inline:clamp(16px,4vw,40px);}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;line-height:1.1;margin:0}
+h2{font-size:var(--s4);font-weight:600}
+h3{font-size:var(--s3);font-weight:600}
+p{margin:0}
+.eyebrow{font-family:var(--f-mono);font-size:var(--s-1);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.lede{font-size:var(--s2);color:var(--muted);max-width:62ch}
+code,kbd,.mono{font-family:var(--f-mono);font-size:.9em}
+p code,li code,td code{background:var(--accent-soft);color:var(--ink);padding:.05em .35em;border-radius:4px;word-break:break-word}
+
+/* ---------- header ---------- */
+.top{padding-block:clamp(40px,7vw,80px) 28px;display:grid;gap:22px}
+.top h1{font-size:var(--s5);font-weight:700;letter-spacing:-.01em}
+.top h1 .strike{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--bad);text-decoration-thickness:3px;font-weight:600}
+.top h1 .lock{color:var(--good)}
+.stack{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font-family:var(--f-mono);font-size:var(--s-1);border:1px solid var(--line);background:var(--surface);padding:4px 10px;border-radius:999px;color:var(--ink)}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-top:6px}
+.fact{background:var(--surface);padding:16px 18px;display:grid;gap:4px;align-content:start}
+.fact b{font-family:var(--f-display);font-size:var(--s4);font-weight:700;font-variant-numeric:tabular-nums;line-height:1}
+.fact span{font-size:var(--s0);color:var(--muted)}
+
+section{padding-block:clamp(36px,6vw,64px);border-top:1px solid var(--line)}
+.sec-head{display:grid;gap:10px;margin-bottom:26px}
+
+/* ---------- trace diagram ---------- */
+.diagram{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px}
+.diagram svg{display:block;width:100%;min-width:860px;height:auto}
+.node-box{fill:var(--paper);stroke:var(--line);stroke-width:1.5}
+.node-title{font-family:var(--f-display);font-size:17px;font-weight:600;fill:var(--ink)}
+.node-sub{font-family:var(--f-mono);font-size:11.5px;fill:var(--muted)}
+.wire{stroke:var(--muted);stroke-width:2;fill:none;stroke-dasharray:5 5}
+.tag-bad{fill:var(--bad-soft);stroke:var(--bad)}
+.tag-ok{fill:var(--good-soft);stroke:var(--good)}
+.tag-text{font-family:var(--f-mono);font-size:11px;fill:var(--ink)}
+.packet{fill:var(--accent)}
+@keyframes travel{0%{transform:translateX(0);opacity:0}6%{opacity:1}94%{opacity:1}100%{transform:translateX(735px);opacity:0}}
+.packet-g{animation:travel 6s linear infinite}
+@media (prefers-reduced-motion:reduce){.packet-g{animation:none;opacity:0}}
+.legend{display:flex;flex-wrap:wrap;gap:16px;margin-top:12px;font-size:var(--s0);color:var(--muted)}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px;border:1.5px solid}
+.legend .lb{background:var(--bad-soft);border-color:var(--bad)}
+.legend .lg{background:var(--good-soft);border-color:var(--good)}
+
+/* ---------- incident log ---------- */
+.log{display:grid;gap:14px;counter-reset:step}
+.entry{display:grid;grid-template-columns:120px 1fr;gap:20px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px 22px}
+.entry > *{min-width:0}
+.entry .meta{display:grid;gap:8px;align-content:start}
+.step{font-family:var(--f-mono);font-size:var(--s-1);color:var(--muted)}
+.pill{justify-self:start;font-family:var(--f-mono);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;padding:3px 8px;border-radius:5px;border:1px solid}
+.pill.root{color:var(--bad);background:var(--bad-soft);border-color:var(--bad)}
+.pill.fixed{color:var(--good);background:var(--good-soft);border-color:var(--good)}
+.pill.ruled{color:var(--warn);background:var(--warn-soft);border-color:var(--warn)}
+.pill.tool{color:var(--muted);background:var(--paper);border-color:var(--line)}
+.entry .body{display:grid;gap:12px}
+.entry h3{font-size:var(--s2)}
+.err{font-family:var(--f-mono);font-size:var(--s0);color:var(--bad);background:var(--bad-soft);border-left:3px solid var(--bad);padding:8px 12px;border-radius:0 6px 6px 0;overflow-wrap:anywhere}
+.triage{display:grid;gap:6px;margin:0;padding:0;list-style:none}
+.triage li{display:grid;grid-template-columns:92px 1fr;gap:10px;font-size:var(--s0)}
+.triage li > b{font-family:var(--f-mono);font-weight:500;font-size:var(--s-1);color:var(--muted);text-transform:uppercase;letter-spacing:.05em;padding-top:2px}
+.triage li > span{min-width:0}
+.phase{font-family:var(--f-display);font-size:var(--s2);font-weight:600;color:var(--accent);margin-top:14px}
+
+/* ---------- code ---------- */
+pre{margin:0;background:var(--code-bg);color:var(--code-fg);font-family:var(--f-mono);font-size:13px;line-height:1.6;padding:14px 16px;border-radius:8px;overflow-x:auto;tab-size:2}
+pre .c{color:var(--code-dim)}
+pre .k{color:var(--code-key)}
+pre .s{color:var(--code-str)}
+.codeblock{position:relative;min-width:0}
+.copy{position:absolute;top:8px;right:8px;font-family:var(--f-mono);font-size:11px;background:transparent;color:var(--code-dim);border:1px solid var(--code-dim);border-radius:5px;padding:3px 8px;cursor:pointer}
+.copy:hover{color:var(--code-fg);border-color:var(--code-fg)}
+
+/* ---------- tabs ---------- */
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
+.tab{font-family:var(--f-mono);font-size:var(--s0);padding:8px 14px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+.tab[aria-selected="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.panel{display:grid;gap:18px}
+.cmd{display:grid;gap:8px}
+.cmd p{font-size:var(--s0);color:var(--muted);max-width:75ch}
+.cmd h4{margin:0;font-family:var(--f-body);font-size:var(--s1);font-weight:600}
+
+/* ---------- tables ---------- */
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:var(--s0)}
+th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-family:var(--f-mono);font-weight:500;font-size:var(--s-1);text-transform:uppercase;letter-spacing:.06em;color:var(--muted);background:var(--paper)}
+tr:last-child td{border-bottom:0}
+td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.bar{height:10px;border-radius:2px;background:var(--accent);min-width:2px}
+.bar.leave{background:var(--muted);opacity:.55}
+.bar.bsr{background:var(--warn)}
+.bar.sql{background:var(--good)}
+.bar.rebuild{background:var(--accent)}
+td.barcell{width:34%;min-width:140px;padding-top:15px}
+.tr-bad td.col-before{color:var(--bad);font-weight:600}
+.tr-good td.col-after{color:var(--good);font-weight:600}
+
+.split{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.split > *{min-width:0}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px 20px;display:grid;gap:10px;align-content:start}
+.card ul{margin:0;padding-left:1.1em;display:grid;gap:6px;font-size:var(--s0)}
+
+.lessons{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
+.lesson{display:grid;gap:8px;align-content:start;padding:18px;border-top:3px solid var(--accent);background:var(--surface);border-radius:0 0 10px 10px}
+.lesson h3{font-size:var(--s2)}
+.lesson p{font-size:var(--s0);color:var(--muted)}
+
+footer{padding-block:36px 56px;border-top:1px solid var(--line);color:var(--muted);font-size:var(--s0);display:grid;gap:6px}
+
+@media (max-width:640px){
+  .entry{grid-template-columns:1fr;gap:12px;padding:16px}
+  .entry .meta{grid-auto-flow:column;justify-content:start;align-items:center;gap:10px}
+  .triage li{grid-template-columns:1fr;gap:2px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <p class="eyebrow">Infrastructure case study · Windows Server · IIS · VMware Cloud Director · MySQL · WordPress</p>
+  <h1><span class="strike">http://203.0.113.10</span> → <span class="lock">https://</span> a production WordPress site, traced hop by hop</h1>
+  <p class="lede">A small business website ran on plain HTTP, reachable only by its public IP address. I moved it to HTTPS on its own domain, then chased a handshake failure through five layers until I found the real cause in the cloud edge gateway's NAT rules, and finished by cleaning hard-coded addresses out of the database without corrupting it.</p>
+  <div class="stack" aria-label="Technology used">
+    <span class="chip">Windows Server · IIS 10</span>
+    <span class="chip">http.sys / Schannel TLS</span>
+    <span class="chip">URL Rewrite · web.config</span>
+    <span class="chip">VMware Cloud Director · NSX edge DNAT</span>
+    <span class="chip">MySQL 8.0</span>
+    <span class="chip">WordPress · Avada · Slider Revolution · Yoast</span>
+    <span class="chip">PowerShell · cmd · curl.exe</span>
+  </div>
+  <div class="facts">
+    <div class="fact"><b>5</b><span>layers traced: DNS, edge NAT, IIS, WordPress, MySQL</span></div>
+    <div class="fact"><b>486</b><span>text columns scanned for the old IP address</span></div>
+    <div class="fact"><b>500</b><span>values rewritten in one SQL transaction, 0 left behind</span></div>
+    <div class="fact"><b>0</b><span>rows corrupted: serialized data handled separately</span></div>
+  </div>
+</header>
+
+<!-- =================== TRACE =================== -->
+<section id="trace">
+  <div class="sec-head">
+    <p class="eyebrow">The request path</p>
+    <h2>Where each fault lived</h2>
+    <p class="lede">Every symptom showed up in the browser, but the causes sat at different hops. Mapping the path first kept the troubleshooting honest: each test was chosen to clear or condemn one hop.</p>
+  </div>
+  <div class="diagram" role="img" aria-label="Request path from browser through DNS, edge gateway NAT, IIS, WordPress and MySQL, with the fault found at each hop">
+    <svg viewBox="0 0 900 250" xmlns="http://www.w3.org/2000/svg">
+      <path class="wire" d="M120 95 H780"/>
+      <g class="packet-g"><circle class="packet" cx="60" cy="95" r="7"/></g>
+
+      <g>
+        <rect class="node-box" x="10" y="55" width="110" height="80" rx="10"/>
+        <text class="node-title" x="65" y="88" text-anchor="middle">Browser</text>
+        <text class="node-sub" x="65" y="108" text-anchor="middle">visitor</text>
+      </g>
+      <g>
+        <rect class="node-box" x="160" y="55" width="110" height="80" rx="10"/>
+        <text class="node-title" x="215" y="88" text-anchor="middle">DNS</text>
+        <text class="node-sub" x="215" y="108" text-anchor="middle">A + CNAME</text>
+        <rect class="tag-ok" x="160" y="150" width="110" height="40" rx="6"/>
+        <text class="tag-text" x="215" y="167" text-anchor="middle">resolved OK</text>
+        <text class="tag-text" x="215" y="182" text-anchor="middle">both names</text>
+      </g>
+      <g>
+        <rect class="node-box" x="310" y="55" width="130" height="80" rx="10"/>
+        <text class="node-title" x="375" y="88" text-anchor="middle">Edge gateway</text>
+        <text class="node-sub" x="375" y="108" text-anchor="middle">NSX DNAT</text>
+        <rect class="tag-bad" x="300" y="150" width="150" height="54" rx="6"/>
+        <text class="tag-text" x="375" y="167" text-anchor="middle">ROOT CAUSE</text>
+        <text class="tag-text" x="375" y="182" text-anchor="middle">:443 translated</text>
+        <text class="tag-text" x="375" y="197" text-anchor="middle">to VM :80</text>
+      </g>
+      <g>
+        <rect class="node-box" x="480" y="55" width="130" height="80" rx="10"/>
+        <text class="node-title" x="545" y="88" text-anchor="middle">IIS / http.sys</text>
+        <text class="node-sub" x="545" y="108" text-anchor="middle">bindings · TLS</text>
+        <rect class="tag-bad" x="470" y="150" width="150" height="40" rx="6"/>
+        <text class="tag-text" x="545" y="167" text-anchor="middle">www-only binding</text>
+        <text class="tag-text" x="545" y="182" text-anchor="middle">SNI off</text>
+      </g>
+      <g>
+        <rect class="node-box" x="650" y="55" width="110" height="80" rx="10"/>
+        <text class="node-title" x="705" y="88" text-anchor="middle">WordPress</text>
+        <text class="node-sub" x="705" y="108" text-anchor="middle">PHP · FastCGI</text>
+        <rect class="tag-bad" x="640" y="150" width="130" height="40" rx="6"/>
+        <text class="tag-text" x="705" y="167" text-anchor="middle">siteurl = old IP</text>
+        <text class="tag-text" x="705" y="182" text-anchor="middle">redirect loop</text>
+      </g>
+      <g>
+        <rect class="node-box" x="790" y="55" width="100" height="80" rx="10"/>
+        <text class="node-title" x="840" y="88" text-anchor="middle">MySQL</text>
+        <text class="node-sub" x="840" y="108" text-anchor="middle">8.0</text>
+        <rect class="tag-bad" x="785" y="150" width="110" height="40" rx="6"/>
+        <text class="tag-text" x="840" y="167" text-anchor="middle">IP hard-coded</text>
+        <text class="tag-text" x="840" y="182" text-anchor="middle">in 24 columns</text>
+      </g>
+      <text class="node-sub" x="10" y="238">public 203.0.113.10  →  private 10.0.0.10   (addresses anonymised)</text>
+    </svg>
+  </div>
+  <div class="legend"><span><i class="lb"></i>Fault found and fixed</span><span><i class="lg"></i>Verified healthy</span></div>
+</section>
+
+<!-- =================== LOG =================== -->
+<section id="log">
+  <div class="sec-head">
+    <p class="eyebrow">Incident log</p>
+    <h2>Symptom, hypothesis, test, finding</h2>
+    <p class="lede">Entries are in the order they happened, including the hypotheses that turned out wrong. Ruling things out was most of the work.</p>
+  </div>
+
+  <div class="log">
+
+    <p class="phase">Phase 1 · Domain and certificate</p>
+
+    <article class="entry">
+      <div class="meta"><span class="step">Step 1</span><span class="pill fixed">Fixed</span></div>
+      <div class="body">
+        <h3>Domain redirected straight back to the bare IP</h3>
+        <div class="err">http://www.example.com.au/wordpress → 302 → http://203.0.113.10/wordpress/</div>
+        <ul class="triage">
+          <li><b>Hypothesis</b><span>IIS isn't redirecting; WordPress is. It stores its own address in <code>siteurl</code> and <code>home</code> and canonicalises every request to it.</span></li>
+          <li><b>Fix</b><span>Pinned <code>WP_HOME</code> and <code>WP_SITEURL</code> in <code>wp-config.php</code>, first on <code>http://</code> to keep the site up, then on <code>https://</code> once TLS worked end to end.</span></li>
+        </ul>
+      </div>
+    </article>
+
+    <article class="entry">
+      <div class="meta"><span class="step">Step 2</span><span class="pill fixed">Fixed</span></div>
+      <div class="body">
+        <h3>Browser refused the TLS handshake</h3>
+        <div class="err">ERR_SSL_PROTOCOL_ERROR · "sent an invalid response"</div>
+        <ul class="triage">
+          <li><b>Checked</b><span><code>Get-WebBinding</code> showed one https binding, for <code>www.</code> only, with <code>sslFlags 0</code> (SNI off). The apex domain had no binding at all.</span></li>
+          <li><b>Checked</b><span>Certificate: wildcard <code>*.example.com.au</code>, private key present, Subject Alternative Name also lists the apex domain. The certificate itself was fine.</span></li>
+          <li><b>Fix</b><span>Enabled SNI on the www binding and added a second https binding for the apex domain. Worked around the IIS Manager quirk where the OK button stays greyed after ticking SNI by re-selecting the certificate.</span></li>
+          <li><b>Result</b><span>Same error. The binding was wrong, but it wasn't the whole story.</span></li>
+        </ul>
+      </div>
+    </article>
+
+    <article class="entry">
+      <div class="meta"><span class="step">Step 3</span><span class="pill ruled">Benign</span></div>
+      <div class="body">
+        <h3>IIS alert after enabling SNI</h3>
+        <div class="err">No default SSL site has been created. To support browsers without SNI capabilities…</div>
+        <ul class="triage">
+          <li><b>Assessed</b><span>Informational only. It affects clients without SNI support (for example, Internet Explorer on Windows XP). Accepted and documented.</span></li>
+        </ul>
+      </div>
+    </article>
+
+    <p class="phase">Phase 2 · Isolating the layer</p>
+
+    <article class="entry">
+      <div class="meta"><span class="step">Step 4</span><span class="pill tool">Key test</span></div>
+      <div class="body">
+        <h3>Speak plain HTTP to port 443</h3>
+        <div class="err">http://www.example.com.au:443/wordpress/test.html → page loaded</div>
+        <ul class="triage">
+          <li><b>Why</b><span>"Invalid response" during a handshake usually means the other end isn't speaking TLS at all. If port 443 answers a plain HTTP request, something is serving HTTP on it.</span></li>
+          <li><b>Finding</b><span>It did. Something on the path to port 443 was serving cleartext, which narrowed the search from "certificate problem" to "wrong thing listening, or wrong thing forwarded".</span></li>
+        </ul>
+      </div>
+    </article>
+
+    <article class="entry">
+      <div class="meta"><span class="step">Step 5</span><span class="pill ruled">Ruled out</span></div>
+      <div class="body">
+        <h3>Who owns port 443 on the VM?</h3>
+        <ul class="triage">
+          <li><b>Test</b><span><code>netstat -ano | findstr :443</code> showed <code>0.0.0.0:443 LISTENING</code> on PID 4, which is http.sys (IIS). No rogue process. The VM's own address was private, so the server sits behind a NAT gateway.</span></li>
+        </ul>
+      </div>
+    </article>
+
+    <article class="entry">
+      <div class="meta"><span class="step">Step 6</span><span class="pill tool">Gotcha</span></div>
+      <div class="body">
+        <h3>curl in PowerShell isn't curl</h3>
+        <div class="err">Invoke-WebRequest : A parameter cannot be found that matches parameter name 'vk'.</div>
+        <ul class="triage">
+          <li><b>Cause</b><span>In Windows PowerShell, <code>curl</code> is an alias for <code>Invoke-WebRequest</code>.</span></li>
+          <li><b>Fix</b><span>Called <code>curl.exe</code> explicitly.</span></li>
+        </ul>
+      </div>
+    </article>
+
+    <article class="entry">
+      <div class="meta"><span class="step">Step 7</span><span class="pill ruled">Ruled out</span></div>
+      <div class="body">
+        <h3>Bypass the network: test TLS on the server itself</h3>
+        <ul class="triage">
+          <li><b>Test</b><span><code>curl.exe -vk … --resolve host:443:127.0.0.1</code> pins the name to loopback, so SNI, the certificate and IIS are all exercised without DNS or the gateway.</span></li>
+          <li><b>Finding</b><span>Full TLS handshake and <code>HTTP/1.1 200 OK</code> from <code>Microsoft-IIS/10.0</code>. IIS, the bindings and the certificate were healthy. The fault was in front of the VM.</span></li>
+        </ul>
+      </div>
+    </article>
+
+    <article class="entry">
+      <div class="meta"><span class="step">Step 8</span><span class="pill ruled">Red herring</span></div>
+      <div class="body">
+        <h3>"remote party requests renegotiation"</h3>
+        <ul class="triage">
+          <li><b>Hypothesis</b><span>IIS was requesting client certificates, which HTTP/2 browsers reject with exactly this error.</span></li>
+          <li><b>Test</b><span>SSL Settings on the site and every application under it: all set to <em>Ignore</em>.</span></li>
+          <li><b>Finding</b><span>Not the cause. Schannel reports TLS 1.3 post-handshake session tickets with that wording; it is normal curl output on Windows. Dropped it and moved on.</span></li>
+        </ul>
+      </div>
+    </article>
+
+    <article class="entry">
+      <div class="meta"><span class="step">Step 9</span><span class="pill ruled">Ruled out</span></div>
+      <div class="body">
+        <h3>DNS and reachability</h3>
+        <ul class="triage">
+          <li><b>Test</b><span><code>ping</code> from inside the VM resolved both names to the public IP. From outside, DNS resolved correctly but ICMP timed out.</span></li>
+          <li><b>Finding</b><span>DNS was correct. The timeouts were the edge firewall dropping ICMP, which is expected and harmless for web traffic.</span></li>
+        </ul>
+      </div>
+    </article>
+
+    <article class="entry">
+      <div class="meta"><span class="step">Step 10</span><span class="pill root">Root cause</span></div>
+      <div class="body">
+        <h3>The edge gateway translated port 443 to port 80</h3>
+        <div class="err">curl: (35) schannel: next InitializeSecurityContext failed: SEC_E_INVALID_TOKEN (0x80090308)</div>
+        <ul class="triage">
+          <li><b>Signal</b><span>From an outside PC the client sent a TLS hello and got back bytes that weren't TLS. Combined with Steps 4 and 7, port 443 had to be landing on the VM's port 80.</span></li>
+          <li><b>Finding</b><span>In VMware Cloud Director, a DNAT rule's <em>External Port</em> is the port matched on the public IP, and the <em>Application</em> profile is the translated port on the VM. Both web rules had External Port <code>Any</code> at the same priority, so the HTTP rule ("any port → :80") was catching 443 traffic.</span></li>
+          <li><b>Fix</b><span>Set External Port to <code>80</code> on the HTTP rule and <code>443</code> on the HTTPS rule. The external handshake succeeded immediately.</span></li>
+        </ul>
+      </div>
+    </article>
+
+    <p class="phase">Phase 3 · Cleaning the database</p>
+
+    <article class="entry">
+      <div class="meta"><span class="step">Step 11</span><span class="pill fixed">Fixed</span></div>
+      <div class="body">
+        <h3>Padlock up, but images missing</h3>
+        <div class="err">Mixed content: data-bg="http://203.0.113.10/wordpress/wp-content/uploads/…"</div>
+        <ul class="triage">
+          <li><b>Read</b><span>Read the raw page HTML and found the old IP in banners, slider layers, Open Graph tags and buttons, in <code>http://</code>, <code>https://</code> and protocol-relative <code>//</code> forms, plus JSON-escaped <code>http:\/\/</code> inside slider data.</span></li>
+          <li><b>Plan</b><span>Back up the database first, find every column holding the IP, then choose a safe fix per column type.</span></li>
+        </ul>
+      </div>
+    </article>
+
+    <article class="entry">
+      <div class="meta"><span class="step">Step 12</span><span class="pill tool">Gotchas</span></div>
+      <div class="body">
+        <h3>Getting a usable backup and query output</h3>
+        <ul class="triage">
+          <li><b>Error</b><span><code>Unknown database 'wordpress_db'</code>. Read the real name from <code>DB_NAME</code> in wp-config.</span></li>
+          <li><b>Error</b><span>The dump scrolled to the screen instead of a file: the path was being read as a table name. Fixed with <code>--result-file=</code>.</span></li>
+          <li><b>Error</b><span><code>INTO OUTFILE</code> failed three ways: a stray <code>;</code> before it, Workbench's "unexpected ordering of clauses", then <code>#1227 Access denied; you need the FILE privilege</code>. Left the FILE privilege alone (a security risk) and wrote results through the client instead.</span></li>
+          <li><b>Error</b><span><code>The '&lt;' operator is reserved for future use</code>. PowerShell has no input redirection; used <code>-e "source file.sql"</code>.</span></li>
+          <li><b>Caught</b><span>PowerShell treats the backtick as an escape character, so generated SQL had lost its identifier quoting and would fail on columns named <code>key</code> and <code>group</code>. Rebuilt the query file with quoting restored.</span></li>
+          <li><b>Caught</b><span>A copy-pasted <code>UPDATE</code> had picked up Markdown link syntax, which would have written <code>[www…](https://…)</code> into 371 pages. Added a check for it inside the transaction.</span></li>
+        </ul>
+      </div>
+    </article>
+
+    <article class="entry">
+      <div class="meta"><span class="step">Step 13</span><span class="pill fixed">Fixed</span></div>
+      <div class="body">
+        <h3>One transaction, verified before commit</h3>
+        <ul class="triage">
+          <li><b>Scan</b><span>Generated a <code>LIKE</code> probe for every text column from <code>information_schema.COLUMNS</code>: 486 columns, 24 of them holding the IP.</span></li>
+          <li><b>Fix</b><span>Plain-text and JSON columns updated with nested <code>REPLACE()</code> inside <code>START TRANSACTION</code>, with check queries before <code>COMMIT</code>. Every check returned 0.</span></li>
+          <li><b>Kept safe</b><span>Serialized PHP data (<code>wp_options</code>, <code>wp_postmeta</code>, <code>wp_usermeta</code>) went through a serialization-aware search-replace, since a raw <code>REPLACE</code> changes string lengths and breaks theme settings. Yoast's index tables were rebuilt, not edited. GUIDs and logs were left untouched.</span></li>
+        </ul>
+      </div>
+    </article>
+
+    <p class="phase">Phase 4 · Routing and redirects</p>
+
+    <article class="entry">
+      <div class="meta"><span class="step">Step 14</span><span class="pill fixed">Fixed</span></div>
+      <div class="body">
+        <h3>HTTPS redirect that would have dropped the path</h3>
+        <ul class="triage">
+          <li><b>Bug</b><span>The original rule redirected to <code>https://{HTTP_HOST}/{R:1}</code>. Inside the <code>/wordpress</code> application, <code>{R:1}</code> is relative to the app, so <code>/wordpress</code> would vanish from every redirected URL.</span></li>
+          <li><b>Fix</b><span>Redirect to <code>https://{HTTP_HOST}{REQUEST_URI}</code>, tested as 302 before switching to 301.</span></li>
+        </ul>
+      </div>
+    </article>
+
+    <article class="entry">
+      <div class="meta"><span class="step">Step 15</span><span class="pill fixed">Fixed</span></div>
+      <div class="body">
+        <h3>Root URL to the WordPress application, without breaking the .NET app</h3>
+        <ul class="triage">
+          <li><b>Constraint</b><span>The Default Web Site hosts WordPress (PHP), a .NET Framework application and phpMyAdmin. IIS child applications inherit the root's rewrite rules, and the HTTP Redirect feature would redirect all of them.</span></li>
+          <li><b>Fix</b><span>One URL Rewrite rule in the root <code>web.config</code>, conditioned on <code>{REQUEST_URI}</code> matching exactly <code>^/$</code>. It can never fire inside a child app, so there's no redirect loop. The existing FastCGI handler was kept.</span></li>
+        </ul>
+      </div>
+    </article>
+
+  </div>
+</section>
+
+<!-- =================== NAT =================== -->
+<section id="nat">
+  <div class="sec-head">
+    <p class="eyebrow">VMware Cloud Director · edge gateway</p>
+    <h2>The two-field change that fixed HTTPS</h2>
+    <p class="lede">Both rules looked correct at a glance. The bug was in the meaning of the fields, not their values.</p>
+  </div>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Rule</th><th>Action</th><th>External IP</th><th>Internal IP</th><th>Application (translated port)</th><th>External port: before</th><th>External port: after</th></tr></thead>
+      <tbody>
+        <tr class="tr-bad tr-good"><td>HTTP</td><td>DNAT</td><td class="mono">203.0.113.10</td><td class="mono">10.0.0.10</td><td>HTTP · 80</td><td class="col-before mono">Any</td><td class="col-after mono">80</td></tr>
+        <tr class="tr-bad tr-good"><td>HTTPS</td><td>DNAT</td><td class="mono">203.0.113.10</td><td class="mono">10.0.0.10</td><td>HTTPS · 443</td><td class="col-before mono">Any</td><td class="col-after mono">443</td></tr>
+        <tr><td>RDP</td><td>DNAT</td><td class="mono">203.0.113.10</td><td class="mono">10.0.0.10</td><td>RDP · 3389</td><td class="mono">3389</td><td class="mono">3389 · source restriction recommended</td></tr>
+        <tr><td>Outbound</td><td>SNAT</td><td class="mono">203.0.113.10</td><td class="mono">10.0.0.0/24</td><td>–</td><td class="mono">Any</td><td class="mono">unchanged</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- =================== DATA =================== -->
+<section id="data">
+  <div class="sec-head">
+    <p class="eyebrow">Database audit</p>
+    <h2>Where the old IP address was stored</h2>
+    <p class="lede">Rows containing the IP, by column, from the full scan. The treatment depended on how each column stores its data, not on how many rows it held.</p>
+  </div>
+  <div class="legend" style="margin:0 0 12px"><span><i style="background:var(--good);border-color:var(--good)"></i>SQL REPLACE in a transaction</span><span><i style="background:var(--warn);border-color:var(--warn)"></i>Serialization-aware replace</span><span><i style="background:var(--accent);border-color:var(--accent)"></i>Rebuilt by the plugin</span><span><i style="background:var(--muted);border-color:var(--muted);opacity:.55"></i>Left as is</span></div>
+  <div class="tablewrap">
+    <table id="audit">
+      <thead><tr><th>Table.column</th><th style="text-align:right">Rows</th><th>Share</th><th>Treatment</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- =================== COMMANDS =================== -->
+<section id="commands">
+  <div class="sec-head">
+    <p class="eyebrow">Runbook</p>
+    <h2>Commands and configuration</h2>
+    <p class="lede">The commands as run, with hostnames and addresses anonymised. Each one answers a specific question about one hop.</p>
+  </div>
+
+  <div class="tabs" role="tablist" aria-label="Command groups">
+    <button class="tab" role="tab" id="tab-ps" aria-controls="p-ps" aria-selected="true">PowerShell / cmd</button>
+    <button class="tab" role="tab" id="tab-sql" aria-controls="p-sql" aria-selected="false">MySQL</button>
+    <button class="tab" role="tab" id="tab-iis" aria-controls="p-iis" aria-selected="false">IIS &amp; web.config</button>
+    <button class="tab" role="tab" id="tab-wp" aria-controls="p-wp" aria-selected="false">WordPress</button>
+  </div>
+
+  <div class="panel" id="p-ps" role="tabpanel" aria-labelledby="tab-ps">
+    <div class="cmd"><h4>Inspect IIS bindings</h4><p>Which host names have https bindings, and is SNI on (sslFlags 1)?</p>
+<div class="codeblock"><pre>Get-WebBinding | Format-Table protocol, bindingInformation, sslFlags
+netsh http show sslcert</pre></div></div>
+
+    <div class="cmd"><h4>Who is listening on 443?</h4><p>PID 4 is http.sys, meaning IIS owns the port.</p>
+<div class="codeblock"><pre>netstat -ano | findstr :443
+tasklist | findstr &lt;PID&gt;</pre></div></div>
+
+    <div class="cmd"><h4>Is port 443 speaking plain HTTP?</h4><p>If this page loads, whatever answers on 443 is not doing TLS.</p>
+<div class="codeblock"><pre>http://www.example.com.au:443/wordpress/test.html</pre></div></div>
+
+    <div class="cmd"><h4>Test TLS on the server, bypassing DNS and the gateway</h4><p><code>curl.exe</code>, because <code>curl</code> is an Invoke-WebRequest alias in PowerShell.</p>
+<div class="codeblock"><pre>curl.exe -vk https://www.example.com.au/wordpress/test.html `
+  --resolve www.example.com.au:443:127.0.0.1</pre></div></div>
+
+    <div class="cmd"><h4>Test from outside, then pin to the public IP</h4><p>Separates a DNS fault from a network fault.</p>
+<div class="codeblock"><pre>nslookup www.example.com.au
+curl.exe -vk https://www.example.com.au/wordpress/test.html
+curl.exe -vk https://www.example.com.au/wordpress/test.html `
+  --resolve www.example.com.au:443:203.0.113.10</pre></div></div>
+
+    <div class="cmd"><h4>Back up the database before touching it</h4>
+<div class="codeblock"><pre>cd "C:\Program Files\MySQL\MySQL Server 8.0\bin"
+mkdir C:\backup -Force
+.\mysqldump -u root -p --result-file=C:\backup\wordpress_backup.sql wordpress</pre></div></div>
+
+    <div class="cmd"><h4>Run a SQL file from PowerShell</h4><p>PowerShell has no <code>&lt;</code> input redirection, so use the client's <code>source</code> command.</p>
+<div class="codeblock"><pre>.\mysql -u root -p -t wordpress -e "source C:/backup/check_ip.sql" |
+  Out-File C:\backup\check_ip_results.txt</pre></div></div>
+
+    <div class="cmd"><h4>Find hard-coded addresses in theme and plugin files</h4>
+<div class="codeblock"><pre>Get-ChildItem "C:\inetpub\wwwroot\wordpress\wp-content" -Recurse `
+  -Include *.php,*.js,*.css -ErrorAction SilentlyContinue |
+  Select-String "203.0.113.10" | Select-Object Path, LineNumber</pre></div></div>
+  </div>
+
+  <div class="panel" id="p-sql" role="tabpanel" aria-labelledby="tab-sql" hidden>
+    <div class="cmd"><h4>Check the tables support transactions</h4>
+<div class="codeblock"><pre><span class="k">SELECT</span> TABLE_NAME, ENGINE <span class="k">FROM</span> information_schema.TABLES
+<span class="k">WHERE</span> TABLE_SCHEMA = <span class="s">'wordpress'</span>
+  <span class="k">AND</span> TABLE_NAME <span class="k">IN</span> (<span class="s">'wp_posts'</span>,<span class="s">'wp_revslider_slides'</span>,<span class="s">'wp_options'</span>);</pre></div></div>
+
+    <div class="cmd"><h4>Generate a probe for every text column</h4><p>Produces one <code>SELECT … LIKE</code> per column. Backticks protect columns named after reserved words.</p>
+<div class="codeblock"><pre><span class="k">SELECT</span> CONCAT(<span class="s">'SELECT '''</span>, TABLE_NAME, <span class="s">'.'</span>, COLUMN_NAME,
+  <span class="s">''' AS location, COUNT(*) AS cnt FROM `'</span>, TABLE_NAME,
+  <span class="s">'` WHERE `'</span>, COLUMN_NAME, <span class="s">'` LIKE ''%203.0.113.10%'' HAVING cnt &gt; 0 UNION ALL'</span>)
+<span class="k">FROM</span> information_schema.COLUMNS
+<span class="k">WHERE</span> TABLE_SCHEMA = <span class="s">'wordpress'</span>
+  <span class="k">AND</span> DATA_TYPE <span class="k">IN</span> (<span class="s">'char'</span>,<span class="s">'varchar'</span>,<span class="s">'tinytext'</span>,<span class="s">'text'</span>,<span class="s">'mediumtext'</span>,<span class="s">'longtext'</span>);</pre></div></div>
+
+    <div class="cmd"><h4>Rewrite inside a transaction, verify, then commit</h4><p>Run from the interactive client with <code>source</code>. A session closed before <code>COMMIT</code> rolls back.</p>
+<div class="codeblock"><pre><span class="k">START TRANSACTION</span>;
+
+<span class="k">UPDATE</span> wp_posts
+<span class="k">SET</span> post_content =
+  REPLACE(REPLACE(REPLACE(post_content,
+    <span class="s">'203.0.113.10'</span>, <span class="s">'www.example.com.au'</span>),
+    <span class="s">'http://www.example.com.au'</span>, <span class="s">'https://www.example.com.au'</span>),
+    <span class="s">'http:\\/\\/www.example.com.au'</span>, <span class="s">'https:\\/\\/www.example.com.au'</span>)
+<span class="k">WHERE</span> post_content <span class="k">LIKE</span> <span class="s">'%203.0.113.10%'</span>;
+
+<span class="c">-- same pattern for slider params/layers (JSON) and plugin image columns</span>
+
+<span class="k">SELECT</span> <span class="s">'posts'</span> <span class="k">AS</span> location, COUNT(*) <span class="k">AS</span> still_has_ip
+<span class="k">FROM</span> wp_posts <span class="k">WHERE</span> post_content <span class="k">LIKE</span> <span class="s">'%203.0.113.10%'</span>
+<span class="k">UNION ALL</span>
+<span class="k">SELECT</span> <span class="s">'markdown brackets'</span>, COUNT(*)
+<span class="k">FROM</span> wp_posts <span class="k">WHERE</span> post_content <span class="k">LIKE</span> <span class="s">'%[www.example%'</span>;
+
+<span class="k">COMMIT</span>;   <span class="c">-- only when every check returns 0, otherwise ROLLBACK;</span></pre></div></div>
+
+    <div class="cmd"><h4>Why not REPLACE everything?</h4><p>PHP-serialized values record each string's length, for example <code>s:12:"203.0.113.10"</code>. Swapping in a longer domain without updating that prefix makes the whole value unreadable, and theme settings reset. Those tables went through a serialization-aware tool.</p></div>
+  </div>
+
+  <div class="panel" id="p-iis" role="tabpanel" aria-labelledby="tab-iis" hidden>
+    <div class="cmd"><h4>Site bindings: after</h4>
+<div class="codeblock"><pre>protocol  bindingInformation               sslFlags
+http      *:80:                            0
+https     *:443:www.example.com.au         1      <span class="c"># SNI</span>
+https     *:443:example.com.au             1      <span class="c"># SNI, added</span></pre></div></div>
+
+    <div class="cmd"><h4>WordPress application web.config: HTTPS redirect</h4><p><code>{REQUEST_URI}</code> keeps the <code>/wordpress</code> prefix that <code>{R:1}</code> would drop inside a child application.</p>
+<div class="codeblock"><pre>&lt;rule name="HTTPS redirect" stopProcessing="true"&gt;
+  &lt;match url="(.*)" /&gt;
+  &lt;conditions&gt;
+    &lt;add input="{HTTPS}" pattern="off" /&gt;
+  &lt;/conditions&gt;
+  &lt;action type="Redirect" url="https://{HTTP_HOST}{REQUEST_URI}" redirectType="Permanent" /&gt;
+&lt;/rule&gt;</pre></div></div>
+
+    <div class="cmd"><h4>Root web.config: send "/" to WordPress only</h4><p>Matching on <code>{REQUEST_URI}</code> = <code>^/$</code> means the inherited rule can never fire inside the .NET or phpMyAdmin applications.</p>
+<div class="codeblock"><pre>&lt;configuration&gt;
+  &lt;system.webServer&gt;
+    &lt;handlers&gt;
+      &lt;add name="PHP_via_FASTCGI" path="*.php" verb="*" modules="FastCgiModule"
+           scriptProcessor="c:\php\php-cgi.exe" resourceType="File" /&gt;
+    &lt;/handlers&gt;
+    &lt;rewrite&gt;
+      &lt;rules&gt;
+        &lt;rule name="Root to WordPress" stopProcessing="true"&gt;
+          &lt;match url=".*" /&gt;
+          &lt;conditions&gt;
+            &lt;add input="{REQUEST_URI}" pattern="^/$" /&gt;
+          &lt;/conditions&gt;
+          &lt;action type="Redirect" url="https://www.example.com.au/wordpress/" redirectType="Permanent" /&gt;
+        &lt;/rule&gt;
+      &lt;/rules&gt;
+    &lt;/rewrite&gt;
+  &lt;/system.webServer&gt;
+&lt;/configuration&gt;</pre></div></div>
+
+    <div class="cmd"><h4>SSL Settings checked on every application</h4><p>Require SSL off during migration, client certificates set to Ignore on the site, the WordPress application, the .NET application and phpMyAdmin.</p></div>
+  </div>
+
+  <div class="panel" id="p-wp" role="tabpanel" aria-labelledby="tab-wp" hidden>
+    <div class="cmd"><h4>Pin the site address in wp-config.php</h4>
+<div class="codeblock"><pre>define('WP_HOME',    'https://www.example.com.au/wordpress');
+define('WP_SITEURL', 'https://www.example.com.au/wordpress');</pre></div></div>
+    <div class="cmd"><h4>Serialization-aware replace (WP-CLI equivalent)</h4>
+<div class="codeblock"><pre>wp search-replace "203.0.113.10" "www.example.com.au" \
+  wp_options wp_postmeta wp_usermeta --dry-run
+wp search-replace "http://www.example.com.au" "https://www.example.com.au" \
+  wp_options wp_postmeta wp_usermeta</pre></div></div>
+    <div class="cmd"><h4>After the data change</h4><p>Reset the theme's compiled CSS and JS caches, purged the page cache, rebuilt the SEO plugin's index tables, then re-ran the column scan. Only GUIDs and log tables still held the old address.</p></div>
+  </div>
+</section>
+
+<!-- =================== HARDENING & LESSONS =================== -->
+<section id="lessons">
+  <div class="sec-head">
+    <p class="eyebrow">Outcome</p>
+    <h2>What changed, and what I'd tell the next engineer</h2>
+  </div>
+  <div class="split" style="margin-bottom:22px">
+    <div class="card">
+      <h3>Delivered</h3>
+      <ul>
+        <li>HTTPS on both apex and www names with a wildcard certificate and SNI bindings</li>
+        <li>Correct DNAT port mapping on the cloud edge gateway</li>
+        <li>HTTP → HTTPS and root → application redirects that are safe for every child app</li>
+        <li>Old IP removed from content, sliders, plugins and settings with zero corrupted rows</li>
+        <li>Verified backup and a repeatable runbook</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Risks flagged for follow-up</h3>
+      <ul>
+        <li>RDP published to the internet: restrict the source to known addresses</li>
+        <li>phpMyAdmin reachable publicly: IP-restrict or remove</li>
+        <li>Search-engine indexing was disabled in WordPress settings</li>
+        <li>Several buttons used root-relative links that skip the application path</li>
+      </ul>
+    </div>
+  </div>
+  <div class="lessons">
+    <div class="lesson"><h3>Ask the port what it speaks</h3><p>Sending plain HTTP to :443 turned a vague TLS error into a precise question in one request.</p></div>
+    <div class="lesson"><h3>Test from both ends of each hop</h3><p><code>--resolve</code> to loopback proved the server healthy. The same test from outside located the fault in between.</p></div>
+    <div class="lesson"><h3>Read field labels, not just values</h3><p>The NAT rules looked right until I read what "External Port" and "Application" actually meant.</p></div>
+    <div class="lesson"><h3>Treat data by its format</h3><p>Plain text, JSON and PHP-serialized columns each need a different replace strategy. Row counts don't tell you which.</p></div>
+  </div>
+</section>
+
+<footer>
+  <p>Portfolio case study. Organisation, domain, IP addresses and host names are anonymised; <code>203.0.113.0/24</code> is a documentation-only range.</p>
+</footer>
+
+</div>
+
+<script>
+(function(){
+  /* ---- audit table: bars drawn on one shared scale (max = 1527 rows) ---- */
+  var rows = [
+    ["wp_yoast_seo_links.url",641,"rebuild","Rebuilt SEO index"],
+    ["wp_posts.guid",1527,"leave","Left: permanent post IDs"],
+    ["wp_yoast_indexable.permalink",513,"rebuild","Rebuilt SEO index"],
+    ["wp_posts.post_content",371,"sql","SQL REPLACE"],
+    ["wp_wc_admin_note_actions.query",37,"leave","Left: admin notices"],
+    ["wp_simple_history_contexts.value",33,"leave","Left: activity log"],
+    ["wp_revslider_slides.layers",31,"sql","SQL REPLACE (JSON)"],
+    ["wp_revslider_slides7.layers",31,"sql","SQL REPLACE (JSON)"],
+    ["wp_revslider_slides7.params",30,"sql","SQL REPLACE (JSON)"],
+    ["wp_postmeta.meta_value",24,"bsr","Serialization-aware"],
+    ["wp_sbs_6310_item.image",23,"sql","SQL REPLACE"],
+    ["wp_options.option_value",19,"bsr","Serialization-aware"],
+    ["wp_yoast_indexable.twitter_image",15,"rebuild","Rebuilt SEO index"],
+    ["wp_yoast_indexable.open_graph_image",15,"rebuild","Rebuilt SEO index"],
+    ["wp_yoast_indexable.open_graph_image_meta",14,"rebuild","Rebuilt SEO index"],
+    ["wp_bv_fw_requests.*",13,"leave","Left: firewall log"],
+    ["wp_wpm_6310_member.image / hover_image",9,"sql","SQL REPLACE"],
+    ["wp_revslider_slides.params",3,"sql","SQL REPLACE (JSON)"],
+    ["wp_usermeta.meta_value",3,"bsr","Serialization-aware"],
+    ["wp_revslider_sliders7.params",1,"sql","SQL REPLACE (JSON)"],
+    ["wp_users.user_url",1,"sql","SQL REPLACE"]
+  ];
+  rows.sort(function(a,b){return b[1]-a[1];});
+  var max = 1527, tb = document.querySelector('#audit tbody'), html = '';
+  rows.forEach(function(r){
+    var pct = (r[1]/max*100);
+    html += '<tr><td><code>'+r[0]+'</code></td><td class="num">'+r[1].toLocaleString('en-AU')+'</td>'+
+      '<td class="barcell"><div class="bar '+r[2]+'" style="width:'+pct.toFixed(2)+'%" aria-hidden="true"></div></td>'+
+      '<td>'+r[3]+'</td></tr>';
+  });
+  tb.innerHTML = html;
+
+  /* ---- tabs ---- */
+  var tabs = Array.prototype.slice.call(document.querySelectorAll('.tab'));
+  function select(t){
+    tabs.forEach(function(x){
+      var on = x===t;
+      x.setAttribute('aria-selected', on ? 'true':'false');
+      x.tabIndex = on ? 0 : -1;
+      document.getElementById(x.getAttribute('aria-controls')).hidden = !on;
+    });
+    try{ localStorage.setItem('cs-tab', t.id); }catch(e){}
+  }
+  tabs.forEach(function(t,i){
+    t.addEventListener('click', function(){ select(t); });
+    t.addEventListener('keydown', function(e){
+      if(e.key==='ArrowRight'||e.key==='ArrowLeft'){
+        var n = tabs[(i + (e.key==='ArrowRight'?1:-1) + tabs.length) % tabs.length];
+        select(n); n.focus(); e.preventDefault();
+      }
+    });
+  });
+  try{ var saved = localStorage.getItem('cs-tab'); if(saved && document.getElementById(saved)) select(document.getElementById(saved)); }catch(e){}
+
+  /* ---- copy buttons ---- */
+  document.querySelectorAll('.codeblock').forEach(function(block){
+    var pre = block.querySelector('pre');
+    var b = document.createElement('button');
+    b.className = 'copy'; b.type = 'button'; b.textContent = 'Copy';
+    b.addEventListener('click', function(){
+      var text = pre.innerText;
+      function done(){ b.textContent = 'Copied'; setTimeout(function(){ b.textContent='Copy'; }, 1500); }
+      function fallback(){
+        var r = document.createRange(); r.selectNodeContents(pre);
+        var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+        b.textContent = 'Selected: press Ctrl+C';
+        setTimeout(function(){ b.textContent='Copy'; }, 2500);
+      }
+      try{
+        navigator.clipboard.writeText(text).then(done, fallback);
+      }catch(e){ fallback(); }
+    });
+    block.appendChild(b);
+  });
+})();
+</script>
+</body>
+</html>

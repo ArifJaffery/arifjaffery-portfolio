@@ -1,15 +1,1144 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style><title>WordPress on IIS Hardening</title><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap"><style>:root{--bg:#EDF1F4;--surface:#FFFFFF;--sunk:#E2E8ED;--ink:#12202E;--muted:#54657A;--line:#CBD5DE;--accent:#0B6E8F;--accent-soft:#D6EBF2;--good:#1B7F55;--good-soft:#D9F0E5;--warn:#8F5B00;--warn-soft:#F6E8C9;--crit:#B93A27;--crit-soft:#F8DDD7;--display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;--body:"IBM Plex Sans","Segoe UI",system-ui,sans-serif;--mono:"IBM Plex Mono",ui-monospace,Consolas,monospace}@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0D1620;--surface:#15222F;--sunk:#0A1119;--ink:#E6EDF3;--muted:#93A4B5;--line:#283848;--accent:#56C2E0;--accent-soft:#12384A;--good:#55D29B;--good-soft:#123527;--warn:#F0B755;--warn-soft:#3A2C0C;--crit:#FF806B;--crit-soft:#431A14;color-scheme:dark}}:root[data-theme=dark]{--bg:#0D1620;--surface:#15222F;--sunk:#0A1119;--ink:#E6EDF3;--muted:#93A4B5;--line:#283848;--accent:#56C2E0;--accent-soft:#12384A;--good:#55D29B;--good-soft:#123527;--warn:#F0B755;--warn-soft:#3A2C0C;--crit:#FF806B;--crit-soft:#431A14;color-scheme:dark}*{box-sizing:border-box}body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.6}.wrap{max-width:62rem;margin:0 auto;padding-inline:20px;padding-block:3rem 4rem;display:flex;flex-direction:column;gap:4rem}h1,h2,h3{font-family:var(--display);line-height:1.1;margin:0;text-wrap:balance}h1{font-size:clamp(2.1rem,6vw,3.6rem);font-weight:700;letter-spacing:-.02em}h2{font-size:clamp(1.5rem,3.6vw,2.1rem);font-weight:700;letter-spacing:-.01em}h3{font-size:1.05rem;font-weight:500}p{margin:0;max-width:65ch}.eyebrow{font-family:var(--mono);font-size:.75rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}.lede{font-size:1.15rem;color:var(--muted)}section{display:flex;flex-direction:column;gap:1.25rem}code,pre{font-family:var(--mono);font-size:.82rem}button{font:inherit;color:inherit;cursor:pointer}:focus-visible{outline:2px solid var(--accent);outline-offset:2px}.hero{gap:1.5rem}.stack{font-family:var(--mono);font-size:.8rem;color:var(--muted);display:flex;flex-wrap:wrap;gap:.4rem .5rem}.stack span{border:1px solid var(--line);padding:.15rem .55rem;border-radius:3px}.ctx{margin:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(14rem,1fr));gap:1rem 2rem;border-left:3px solid var(--accent);padding-left:1rem}.ctx div{display:flex;flex-direction:column;gap:.15rem;min-width:0}.ctx dt{font-family:var(--mono);font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}.ctx dd{margin:0;font-weight:500;line-height:1.4}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-block:1px solid var(--line)}.stat{padding:1.1rem 1rem 1.1rem 0;display:flex;flex-direction:column;gap:.2rem}.stat+.stat{padding-left:1rem;border-left:1px solid var(--line)}.stat b{font-family:var(--display);font-size:2.4rem;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}.stat b small{font-size:1.1rem;color:var(--muted);font-weight:500}.stat span{font-size:.85rem;color:var(--muted)}@media (max-width:640px){.stats{grid-template-columns:repeat(2,1fr)}.stat:nth-child(3){padding-left:0;border-left:0}.stat:nth-child(n+3){border-top:1px solid var(--line)}}.board{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:1.25rem;display:flex;flex-direction:column;gap:1rem}.board-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:.75rem}.toggle{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:3px;background:var(--sunk)}.toggle button{border:0;background:0 0;padding:.35rem 1rem;border-radius:999px;font-size:.9rem;font-weight:500;color:var(--muted)}.toggle button[aria-pressed=true]{background:var(--ink);color:var(--bg)}.row{display:grid;grid-template-columns:11rem minmax(0,1fr) 9.5rem;gap:1rem;align-items:center;padding-block:.55rem;border-top:1px solid var(--line)}.row.head{border-top:0;padding-block:0;font-family:var(--mono);font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}.svc{display:flex;flex-direction:column;line-height:1.25;min-width:0}.svc b{font-family:var(--mono);font-weight:500;font-size:.95rem;font-variant-numeric:tabular-nums}.svc span{font-size:.8rem;color:var(--muted)}.track{position:relative;height:28px}.track::before{content:"";position:absolute;left:0;right:0;top:50%;border-top:1px dashed var(--line)}.lanes{position:relative;height:1.1rem}.lanes span{position:absolute;top:0;transform:translateX(-50%);white-space:nowrap}.lanes span:first-child{left:0;transform:none}.lanes span:last-child{left:auto;right:0;transform:none}.gate{position:absolute;top:2px;bottom:2px;width:10px;margin-left:-5px;border-radius:2px;border:2px solid var(--good);background:var(--good);transition:background .4s,border-color .4s,transform .4s}.gate.open{background:0 0;border-color:var(--muted);border-style:dashed;transform:scaleY(.55)}.endpoint{position:absolute;right:0;top:50%;width:10px;height:10px;margin-top:-5px;border-radius:50%;border:2px solid var(--muted);background:var(--surface)}.pkt{position:absolute;top:50%;left:0;width:9px;height:9px;margin:-4.5px 0 0 -4.5px;border-radius:50%;background:var(--crit);animation:travel 3.2s cubic-bezier(.3,.1,.3,1) infinite}.pkt.ok{background:var(--accent)}.pkt.bad{background:var(--crit);box-shadow:0 0 0 4px var(--crit-soft)}@keyframes travel{0%{left:0;opacity:0}8%{opacity:1}70%{left:var(--stop);opacity:1}85%{left:var(--stop);opacity:1;transform:scale(1.5)}100%{left:var(--stop);opacity:0;transform:scale(.4)}}.pill{justify-self:start;font-size:.78rem;font-weight:600;padding:.2rem .6rem;border-radius:999px;white-space:nowrap}.pill.good{background:var(--good-soft);color:var(--good)}.pill.warn{background:var(--warn-soft);color:var(--warn)}.pill.crit{background:var(--crit-soft);color:var(--crit)}.pill.pub{background:var(--accent-soft);color:var(--accent)}.legend{display:flex;flex-wrap:wrap;gap:.4rem 1.25rem;font-size:.8rem;color:var(--muted)}.legend i{display:inline-block;width:8px;height:14px;vertical-align:-2px;margin-right:.4rem;border-radius:2px;border:2px solid var(--good);background:var(--good)}.legend i.o{background:0 0;border-color:var(--muted);border-style:dashed}@media (max-width:640px){.row{grid-template-columns:minmax(0,1fr) auto;gap:.4rem .75rem}.row .lanes,.row .track{grid-column:1/-1;order:3}.row.head>:first-child,.row.head>:last-child{display:none}}.tabs{display:flex;flex-wrap:wrap;gap:.5rem}.tabs button{border:1px solid var(--line);background:var(--surface);border-radius:4px;padding:.45rem .8rem;font-size:.9rem;display:flex;gap:.5rem;align-items:baseline}.tabs button em{font-style:normal;font-family:var(--mono);font-size:.75rem;color:var(--muted)}.tabs button[aria-selected=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}.tabs button[aria-selected=true] em{color:inherit;opacity:.7}.layer-intro{color:var(--muted)}.tasks{list-style:none;margin:0;padding:0;border-top:1px solid var(--line)}.task{border-bottom:1px solid var(--line);animation:rise .45s both}@keyframes rise{from{transform:translateY(8px);opacity:.3}to{transform:none;opacity:1}}.task>button{width:100%;text-align:left;background:0 0;border:0;padding:.9rem 0;display:grid;grid-template-columns:1.5rem minmax(0,1fr) 1.2rem;gap:.75rem;align-items:start}.tick{width:1.25rem;height:1.25rem;margin-top:.15rem}.tick circle{fill:var(--good-soft)}.tick path{fill:none;stroke:var(--good);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:14;stroke-dashoffset:14;animation:draw .5s .15s forwards}@keyframes draw{to{stroke-dashoffset:0}}.task .t{display:flex;flex-direction:column;gap:.15rem;min-width:0}.task .t span{font-size:.9rem;color:var(--muted)}.chev{color:var(--muted);transition:transform .25s;font-family:var(--mono)}.task[data-open=true] .chev{transform:rotate(45deg)}.detail{padding:0 0 1rem 2.25rem;display:flex;flex-direction:column;gap:.6rem}.detail p{font-size:.92rem}.detail p b{font-weight:600}pre{margin:0;background:var(--sunk);border:1px solid var(--line);border-radius:4px;padding:.8rem 1rem;overflow-x:auto;line-height:1.5;color:var(--ink)}.compare{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem}.compare>div{display:flex;flex-direction:column;gap:.5rem;min-width:0}.compare h3 span{font-family:var(--mono);font-size:.75rem;color:var(--muted);margin-left:.4rem}.del{color:var(--crit)}.add{color:var(--good)}.dim{color:var(--muted)}@media (max-width:720px){.compare{grid-template-columns:1fr}}.cmds{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1.5rem}@media (max-width:760px){.cmds{grid-template-columns:1fr}}.cmd{display:flex;flex-direction:column;gap:.5rem;min-width:0}.cmd.wide{grid-column:1/-1}.cmd-head{display:flex;justify-content:space-between;align-items:baseline;gap:.75rem;flex-wrap:wrap}.cmd-head div{display:flex;flex-direction:column;min-width:0}.cmd-head small{font-family:var(--mono);font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}.copy{border:1px solid var(--line);background:var(--surface);border-radius:4px;padding:.2rem .7rem;font-size:.8rem;font-weight:500}.copy:hover{border-color:var(--accent);color:var(--accent)}.copy.done{background:var(--good-soft);color:var(--good);border-color:var(--good)}.cmd pre .c{color:var(--muted)}.cmd p{font-size:.88rem;color:var(--muted)}.author{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:1.5rem}.li{display:inline-block;background:var(--ink);color:var(--bg);text-decoration:none;font-weight:500;padding:.55rem 1.1rem;border-radius:4px}.li:hover{background:var(--accent)}.ic{width:1.1em;height:1.1em;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.tabs button{align-items:center}.tabs button[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}.ico{width:2.75rem;height:2.75rem;flex:none;border-radius:50%;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent)}.ico .ic{width:1.35rem;height:1.35rem}.ico.g{background:var(--good-soft);color:var(--good)}.flow{display:flex;align-items:flex-start;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:1.5rem 1.25rem}.node{display:flex;flex-direction:column;align-items:center;gap:.5rem;text-align:center;width:8.5rem;flex:none}.nt{display:flex;flex-direction:column;gap:.1rem;min-width:0}.nt b{font-size:.92rem;font-weight:600;line-height:1.25}.nt span{font-size:.78rem;color:var(--muted);line-height:1.35}.link{flex:1;position:relative;height:2.75rem;min-width:1.5rem}.link::before{content:"";position:absolute;left:0;right:0;top:50%;border-top:2px dashed var(--line)}.link i{position:absolute;top:50%;left:0;width:8px;height:8px;margin:-4px 0 0 -4px;border-radius:50%;background:var(--accent);animation:hop 2.4s linear infinite}@keyframes hop{0%{left:0;opacity:0}15%{opacity:1}85%{opacity:1}100%{left:100%;opacity:0}}@keyframes drop{0%{top:0;opacity:0}15%{opacity:1}85%{opacity:1}100%{top:100%;opacity:0}}.acct{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:1.25rem;gap:.9rem}.acct-head{display:flex;gap:.75rem;align-items:center}.acct dl{margin:0;display:grid;grid-template-columns:auto minmax(0,1fr);gap:.45rem 1rem;font-size:.9rem}.acct dt{font-family:var(--mono);font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding-top:.2rem}.acct dd{margin:0;overflow-wrap:anywhere}.steps{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(13rem,1fr));gap:1.25rem 1.5rem;counter-reset:s}.steps li{counter-increment:s;display:flex;flex-direction:column;gap:.3rem;border-top:2px solid var(--accent);padding-top:.7rem}.steps li::before{content:"Step " counter(s);font-family:var(--mono);font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}.steps li.stop{border-color:var(--warn)}.steps li.stop::before{color:var(--warn)}.steps li.done{border-color:var(--good)}.steps li.done::before{color:var(--good)}.steps p{font-size:.92rem;color:var(--muted)}.roles{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:1.25rem;display:flex;flex-direction:column;gap:1.1rem}.lvl{display:inline-flex;gap:2px;align-items:flex-end;height:.9rem}.lvl i{width:3px;background:currentColor;opacity:.25;border-radius:1px}.lvl i.on{opacity:1}.lvl i:first-child{height:30%}.lvl i:nth-child(2){height:45%}.lvl i:nth-child(3){height:62%}.lvl i:nth-child(4){height:80%}.lvl i:nth-child(5){height:100%}.role-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-start;gap:.5rem 1rem}.role-head div{display:flex;flex-direction:column;gap:.25rem;min-width:0;flex:1 1 16rem}.role-head p{font-size:.92rem;color:var(--muted)}.meter-wrap{display:flex;flex-direction:column;gap:.35rem}.meter-wrap small{font-family:var(--mono);font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}.meter{height:6px;background:var(--sunk);border-radius:999px;overflow:hidden}.meter span{display:block;height:100%;width:20%;background:var(--accent);border-radius:999px;transition:width .5s cubic-bezier(.3,.1,.3,1),background .4s}.meter span.max{background:var(--crit)}.caps{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.55rem 1.5rem}.caps li{display:flex;gap:.6rem;align-items:flex-start;font-size:.92rem;line-height:1.4;animation:rise .4s both}.caps li.no{color:var(--muted)}.caps .ic{width:1.25rem;height:1.25rem;padding:.2rem;border-radius:50%;margin-top:.05rem;stroke-width:2.4}.caps li.yes .ic{background:var(--good-soft);color:var(--good)}.caps li.no .ic{background:var(--sunk);color:var(--muted)}@media (max-width:720px){.flow{flex-direction:column;align-items:stretch}.node{flex-direction:row;align-items:center;text-align:left;width:auto;gap:.85rem}.link{flex:none;height:1.75rem;width:2.75rem;min-width:0}.link::before{left:50%;right:auto;top:0;bottom:0;border-top:0;border-left:2px dashed var(--line)}.link i{left:50%;top:0;animation-name:drop}.caps{grid-template-columns:1fr}}.specimen{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:1.25rem;display:flex;flex-direction:column;gap:1rem}.page-mock{border:1px solid var(--line);border-radius:4px;background:var(--bg);padding:1rem 1.1rem;display:flex;flex-direction:column;gap:.35rem;min-width:0}.page-mock+.page-mock{margin-top:-.25rem}.page-mock small{font-family:var(--mono);font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}.page-mock p{max-width:none}.inj{font-family:var(--mono);font-size:.82em;background:var(--crit-soft);color:var(--crit);border-bottom:2px solid var(--crit);border-radius:3px 3px 0 0;padding:.1rem .35rem;overflow-wrap:anywhere}.specimen pre .inj{font-size:1em;padding:0;border-bottom-width:1px}.specimen[data-state=clean] .inj{display:none}.finds{border-top:1px solid var(--line)}.find{display:grid;grid-template-columns:10rem minmax(0,1fr) auto;gap:.4rem 1.25rem;align-items:start;padding-block:.75rem;border-bottom:1px solid var(--line)}.find>b{font-family:var(--display);font-weight:500}.find>span{font-size:.92rem;color:var(--muted);min-width:0}.find .pill{justify-self:end}@media (max-width:640px){.find{grid-template-columns:minmax(0,1fr) auto}.find>span{grid-column:1/-1;order:3}}.checks{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(15rem,1fr));gap:0 2rem;counter-reset:c}.checks li{counter-increment:c;display:grid;grid-template-columns:2rem minmax(0,1fr);gap:.1rem .5rem;padding-block:.7rem;border-top:1px solid var(--line)}.checks li::before{content:counter(c,decimal-leading-zero);font-family:var(--mono);font-size:.8rem;color:var(--accent);grid-row:1/3;padding-top:.15rem;font-variant-numeric:tabular-nums}.checks p{font-size:.88rem;color:var(--muted)}.learn{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(15rem,1fr));gap:1.25rem 2rem}.learn li{display:flex;flex-direction:column;gap:.25rem;border-top:2px solid var(--accent);padding-top:.7rem}.learn li p{font-size:.92rem;color:var(--muted)}.road{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(15rem,1fr));gap:1.25rem 2rem}.road li{display:flex;flex-direction:column;gap:.25rem;border-top:2px solid var(--warn);padding-top:.7rem}.road li p{font-size:.92rem;color:var(--muted)}.road .tag{font-family:var(--mono);font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--warn)}footer{border-top:1px solid var(--line);padding-top:1.25rem;font-size:.85rem;color:var(--muted)}@media (prefers-reduced-motion:reduce){.pkt{animation:none;left:var(--stop)}.task{animation:none}.tick path{animation:none;stroke-dashoffset:0}.chev,.gate{transition:none}.link i{animation:none;opacity:0}.caps li{animation:none}.meter span{transition:none}}</style></head><body><svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-6 8-6s8 2 8 6"/></symbol><symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></symbol><symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M14 9l2 2"/></symbol><symbol id="i-db" viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v12c0 1.7 3.1 3 7 3s7-1.3 7-3V6"/><path d="M5 12c0 1.7 3.1 3 7 3s7-1.3 7-3"/></symbol><symbol id="i-server" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="7" rx="1.5"/><rect x="4" y="13" width="16" height="7" rx="1.5"/><path d="M8 7.5h.01M8 16.5h.01"/></symbol><symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18"/></symbol><symbol id="i-app" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M7 6.5h.01M7 13h6M7 16h10"/></symbol><symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol><symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol></defs></svg><div class="wrap"><section class="hero"><span class="eyebrow">Security hardening case study</span><h1>Hardening a public WordPress server, from the edge gateway down to the config file</h1><p class="lede">A single internet-facing Windows VM running WordPress on IIS. I reviewed it layer by layer, closed remote-admin exposure, and locked down the host, the web server and the application without taking the site offline.</p><dl class="ctx"><div><dt>Role</dt><dd>Arif Jaffery, Tech Lead at ThePropertyInspectors</dd></div><div><dt>Project</dt><dd>Migrating the company website from WordPress on Linux to WordPress on Windows Server 2025, hosted on the VMware cloud platform</dd></div><div><dt>This phase</dt><dd>Security hardening of the new Windows environment before cut-over</dd></div></dl><div class="stack"><span>VMware Cloud Director (NSX edge)</span><span>Windows Server 2025</span><span>IIS + PHP</span><span>MySQL</span><span>WordPress</span></div><div class="stats"><div class="stat"><b data-count="5">5</b><span>defence layers reviewed</span></div><div class="stat"><b data-count="23">23</b><span>controls applied or verified</span></div><div class="stat"><b data-count="32">32</b><span>inbound host-firewall rules disabled</span></div><div class="stat"><b>3<small> → </small>2</b><span>ports reachable from the internet</span></div></div></section><section><span class="eyebrow">Exposure</span><h2>What an outside connection meets, port by port</h2><p>Every inbound connection has to pass two firewalls: the edge gateway in front of the VM, then Windows Firewall on the server. Before the work, Remote Desktop passed both, and most other admin ports were stopped by the edge alone. Switch between the two states to see the difference.</p><div class="board"><div class="board-head"><h3 id="board-title">After hardening</h3><div class="toggle" role="group" aria-label="Show state"><button type="button" id="btn-before" aria-pressed="false">Before</button> <button type="button" id="btn-after" aria-pressed="true">After</button></div></div><div class="row head"><span>Port / service</span><div class="lanes"><span>Internet</span><span style="left:33.3%">Edge gateway</span><span style="left:66.6%">Host firewall</span><span>Server</span></div><span>Result</span></div><div id="rows"></div><div class="legend"><span><i></i>Gate closed</span><span><i class="o"></i>Gate open</span><span>Dots show where a connection attempt ends.</span></div></div></section><section><span class="eyebrow">The work</span><h2>Controls by layer</h2><p>Each control lists what changed, why it matters, and the command or setting behind it. Select a layer, then open any item.</p><div class="tabs" role="tablist" id="tabs"></div><p class="layer-intro" id="layer-intro"></p><ul class="tasks" id="tasks"></ul></section><section><span class="eyebrow">Web server</span><h2>The site's <code style="font-size:.85em">web.config</code>, before and after</h2><p>The original file only handled WordPress permalinks. The hardened version blocks direct requests for sensitive files, stops the server advertising its PHP version, and adds browser protections. The permalink rule is unchanged.</p><div class="compare"><div><h3>Request filtering <span>added</span></h3><pre><span class="add">+ &lt;directoryBrowse enabled="false" /&gt;
-+ &lt;security&gt;
-+   &lt;requestFiltering removeServerHeader="true"&gt;
-+     &lt;hiddenSegments&gt;
-+       &lt;add segment="wp-config.php" /&gt;
-+       &lt;add segment="xmlrpc.php" /&gt;
-+       &lt;add segment="debug.log" /&gt;
-+     &lt;/hiddenSegments&gt;
-+   &lt;/requestFiltering&gt;
-+ &lt;/security&gt;</span></pre></div><div><h3>Response headers <span>what a visitor's browser sees</span></h3><pre><span class="dim">HTTP/1.1 200 OK</span>
-<span class="del">- Server: Microsoft-IIS/10.0
-- X-Powered-By: PHP/8.x</span>
-<span class="add">+ X-Content-Type-Options: nosniff
-+ X-Frame-Options: SAMEORIGIN
-+ Referrer-Policy: strict-origin-when-cross-origin</span></pre></div></div></section><section><span class="eyebrow">Access control</span><h2>Giving people access without administrator rights</h2><p>Content staff and contractors need to work on the site, not on the server. Access is granted at two separate layers, and each is held to the least it needs: a WordPress role for the person, and a restricted MySQL account for the application.</p><div class="flow"><div class="node"><span class="ico"><svg class="ic"><use href="#i-user"/></svg></span><div class="nt"><b>Person</b><span>Signs in at wp-login.php with their own username</span></div></div><div class="link" aria-hidden="true"><i></i></div><div class="node"><span class="ico g"><svg class="ic"><use href="#i-shield"/></svg></span><div class="nt"><b>WordPress role</b><span>Decides what this person may do in the dashboard</span></div></div><div class="link" aria-hidden="true"><i style="animation-delay:.6s"></i></div><div class="node"><span class="ico"><svg class="ic"><use href="#i-key"/></svg></span><div class="nt"><b>MySQL account</b><span>One shared login the site uses for every request</span></div></div><div class="link" aria-hidden="true"><i style="animation-delay:1.2s"></i></div><div class="node"><span class="ico g"><svg class="ic"><use href="#i-db"/></svg></span><div class="nt"><b>Database</b><span>Privileges cap what the whole site can change</span></div></div></div><div class="compare"><div class="acct"><div class="acct-head"><span class="ico"><svg class="ic"><use href="#i-user"/></svg></span><h3>WordPress user</h3></div><dl><dt>Who</dt><dd>A person, one account each</dd><dt>Stored</dt><dd>Rows in <code>wp_users</code> and <code>wp_usermeta</code></dd><dt>Limit</dt><dd>The role: Subscriber up to Administrator</dd><dt>Signs in</dt><dd>To the website only, never to MySQL</dd></dl></div><div class="acct"><div class="acct-head"><span class="ico"><svg class="ic"><use href="#i-key"/></svg></span><h3>MySQL user</h3></div><dl><dt>Who</dt><dd>The WordPress application, one account per site</dd><dt>Stored</dt><dd>MySQL's own system tables; named in <code>wp-config.php</code></dd><dt>Limit</dt><dd>Privileges granted on one database</dd><dt>Signs in</dt><dd>To MySQL only, never to the website</dd></dl></div></div><h3>How the role was sized</h3><ol class="steps"><li><h3>Started at the lowest role</h3><p>Created a test account directly in the database as a Subscriber.</p></li><li><h3>Confirmed the sign-in</h3><p>The new account logged in to the dashboard on the first attempt.</p></li><li class="stop"><h3>Found the gap</h3><p>The Pages menu was missing, so the existing Avada pages could not be opened. Subscribers lack the <code>edit_pages</code> capability.</p></li><li class="done"><h3>Raised it one step at a time</h3><p>Editor is the lowest built-in role that can open the pages, and it still has no access to plugins, themes, users or settings.</p></li></ol><h3>What each built-in role can reach</h3><div class="roles"><div class="tabs" role="group" aria-label="Choose a role" id="role-tabs"></div><div class="role-head"><div><h3 id="role-name"></h3><p id="role-note"></p></div><span class="pill" id="role-badge"></span></div><div class="meter-wrap"><small>Privilege level</small><div class="meter"><span id="role-meter"></span></div></div><ul class="caps" id="caps"></ul><pre id="role-meta" aria-label="Values stored in wp_usermeta for this role"></pre></div><p class="layer-intro">Avada keeps its own role settings for the page builder and reserves its global theme options for administrators. If a page opens in the plain WordPress editor for an Editor, an administrator enables the builder for that role in Avada's options.</p><h3>The SQL behind it</h3><p>Run against the WordPress database from a MySQL client. Names and passwords are placeholders. If the site uses a table prefix other than <code>wp_</code>, change it in the table names and in the two meta keys.</p><div class="cmds" id="sql"></div></section><section><span class="eyebrow">Command reference</span><h2>The commands behind the work</h2><p>Everything was done with built-in Windows tools, run from an administrator PowerShell or Command Prompt. Paths are shown for a default IIS install. Audit commands come first in each block, so the change is always made against a known starting state.</p><div class="cmds" id="cmds"></div></section><section><span class="eyebrow">Incident response</span><h2>Finding injected links in a compromised WordPress database</h2><p>After restoring the most recent backup of the existing site, the homepage showed links that nobody on the team had written. The infection was inside the backup itself, so it could not be trusted as a clean restore point. I reported the issue, then searched the WordPress database directly to find every affected page.</p><div class="stats"><div class="stat"><b data-count="12">12</b><span>read-only checks written for the database</span></div><div class="stat"><b data-count="5">5</b><span>injected links identified so far</span></div><div class="stat"><b data-count="3">3</b><span>published pages affected</span></div><div class="stat"><b data-count="2">2</b><span>links the first report had missed</span></div></div><h3>What an injected link looks like</h3><p>The attacker drops a link into the middle of a normal sentence, using the bare address as the link text. Switch between the two states to see the page text and the stored HTML with and without it.</p><div class="specimen" id="specimen" data-state="infected"><div class="board-head"><span class="pill crit" id="spec-pill">2 injected links</span><div class="toggle" role="group" aria-label="Show page state"><button type="button" id="spec-bad" aria-pressed="true">Infected</button> <button type="button" id="spec-ok" aria-pressed="false">Cleaned</button></div></div><div class="page-mock"><small>About us page</small><p>The Property Inspectors stands as a trusted <span class="inj">http://spam-site-one.example </span>entity in the realms of real estate, construction law, and conveyancing.</p></div><div class="page-mock"><small>Services page</small><p>Our Building <span class="inj">http://spam-site-two.example </span>Inspectors are highly skilled, qualified and, where required, licensed building inspectors.</p></div><pre aria-label="The stored HTML in wp_posts.post_content">&lt;p&gt;Our Building <span class="inj">&lt;a href="http://spam-site-two.example"&gt;http://spam-site-two.example&lt;/a&gt; </span>Inspectors are highly skilled, ...&lt;/p&gt;</pre></div><h3>What was found</h3><div class="finds"><div class="find"><b>Home</b><span>A hidden link inside the main heading, which also leaked into the page description shown to Google and social media.</span><span class="pill warn">Seen on the page</span></div><div class="find"><b>Home</b><span>A thesis-writing service presented in the welcome text as a "trusted partner".</span><span class="pill warn">Seen on the page</span></div><div class="find"><b>Home</b><span>A gambling site inserted into the "Get in Touch" section.</span><span class="pill warn">Seen on the page</span></div><div class="find"><b>About us</b><span>An unrelated overseas domain placed mid-sentence in the company description.</span><span class="pill crit">Found by the scan</span></div><div class="find"><b>Services</b><span>A second unrelated overseas domain placed mid-sentence in the inspector description.</span><span class="pill crit">Found by the scan</span></div></div><p class="layer-intro">Status at the time of writing: the exact removal statement is prepared for each link found in the database, and the full-table scan for any external link is the next run.</p><h3>How the investigation went</h3><ol class="steps"><li><h3>Spotted it after a restore</h3><p>Three foreign links on the homepage, present in the backup itself. Reported it as a compromise, not a cosmetic fault.</p></li><li><h3>Wrote a read-only scan</h3><p>Twelve <code>SELECT</code> checks across posts, post meta, options, users, comments and scheduled tasks. Nothing is changed while looking.</p></li><li class="stop"><h3>Hit a regex timeout</h3><p>MySQL 8 stopped with "Timeout exceeded in regular expression match" on very large page-builder content. Rewrote the searches with <code>LIKE</code>.</p></li><li><h3>Read the exported rows</h3><p>Exported the rows with their full content and pulled out every link address in each page.</p></li><li class="stop"><h3>Found new domains</h3><p>Two more pages carried links to domains that were not on the original list. A fixed list of bad domains would never have found them.</p></li><li class="done"><h3>Searched by pattern</h3><p>Changed the scan to list any link that leaves the site's own addresses, then prepared an exact removal statement for each one.</p></li></ol><h3>The twelve checks</h3><ol class="checks"><li><h3>Known bad domains in content</h3><p>Pages, posts and their saved revisions.</p></li><li><h3>Known bad domains in post meta</h3><p>Page-builder data and SEO descriptions.</p></li><li><h3>Known bad domains in options</h3><p>Widgets, theme settings and the site tagline.</p></li><li><h3>Spam keywords</h3><p>Gambling, essay-writing and pharmacy terms.</p></li><li><h3>Hidden links</h3><p>Links styled to be invisible to visitors but not to search engines.</p></li><li><h3>Any external link</h3><p>Every published page that links away from the site.</p></li><li><h3>Injected code</h3><p>Scripts, iframes and obfuscated functions in content and settings.</p></li><li><h3>Core settings</h3><p>Site address, admin email, open registration and the default role.</p></li><li><h3>Administrator accounts</h3><p>Every admin, every recent user, and privileges with no owner.</p></li><li><h3>Recently changed content</h3><p>Modification dates compared with real editing activity.</p></li><li><h3>Scheduled tasks</h3><p>Cron hooks that could put the links back.</p></li><li><h3>Comments and categories</h3><p>Links in comments and in category or tag descriptions.</p></li></ol><h3>The SQL behind it</h3><p>Run in phpMyAdmin or any MySQL client against the WordPress database. Domains and addresses are placeholders. If the site uses a table prefix other than <code>wp_</code>, change it in the table names.</p><div class="cmds" id="scan-sql"></div><h3>What I took from it</h3><ul class="learn"><li><h3>A backup is not a clean copy</h3><p>If the infection predates the backup, restoring it restores the attacker's work too. Check a restore before trusting it.</p></li><li><h3>Search for the pattern</h3><p>Attackers rotate domains. Listing every outbound link and reviewing it finds what a blocklist misses.</p></li><li><h3>Look before changing anything</h3><p>Read-only queries first, a database backup second, and a narrow <code>REPLACE</code> on one row last.</p></li><li><h3>Dates can mislead</h3><p>A link written straight into the database does not update the page's modified date, so an old date is not proof of a clean page.</p></li><li><h3>The database is half the job</h3><p>Injected content usually comes with a backdoor in plugin, theme or upload files. A clean database scan does not clear the server.</p></li></ul></section><section><span class="eyebrow">Next phase</span><h2>Recommended next, in priority order</h2><p>Hardening is not finished after one pass. These items were scoped during the review and are planned as the follow-up phase.</p><ul class="road"><li><span class="tag">Priority 1</span><h3>HTTPS and modern TLS</h3><p>Point a domain at the server, issue a Let's Encrypt certificate with win-acme, redirect HTTP to HTTPS, and disable TLS 1.0 and 1.1.</p></li><li><span class="tag">Priority 2</span><h3>Rotate keys and salts</h3><p>Replace the eight WordPress authentication keys, which invalidates every existing session cookie.</p></li><li><span class="tag">Priority 3</span><h3>Admin login protection</h3><p>Two-factor authentication for administrator accounts and a limit on failed login attempts.</p></li><li><span class="tag">Priority 4</span><h3>Off-server backups</h3><p>Scheduled copies of site files and database stored away from the host, with one tested restore.</p></li><li><span class="tag">Priority 5</span><h3>Enforce rate limits</h3><p>Review the log-only data from Dynamic IP Restrictions, tune the thresholds, then switch to blocking.</p></li></ul></section><section class="author"><span class="eyebrow">About the author</span><h2>Arif Jaffery</h2><p>Tech Lead at ThePropertyInspectors, leading the migration of the company website from Linux to Windows Server 2025 on the VMware cloud platform. Available to discuss infrastructure migration and security hardening work.</p><p><a class="li" href="https://www.linkedin.com/in/arif-jaffery" target="_blank" rel="noopener">View profile on LinkedIn<span aria-hidden="true"> ↗</span></a></p></section><footer>Work carried out by Arif Jaffery as Tech Lead at ThePropertyInspectors during the website migration from Linux to Windows Server 2025 on the VMware cloud platform. Server addresses, tenant and machine names, and credentials are deliberately left out of this write-up.</footer></div><script>!function(){var e=window.matchMedia("(prefers-reduced-motion: reduce)").matches,t=[{p:"443",s:"HTTPS · website",edge:[!0,!0],host:[!0,!0],pub:!0},{p:"80",s:"HTTP · website",edge:[!0,!0],host:[!0,!0],pub:!0},{p:"3389",s:"RDP · Remote Desktop",edge:[!0,!1],host:[!0,!1]},{p:"22",s:"SSH · OpenSSH server",edge:[!1,!1],host:[!0,!1]},{p:"5985",s:"WinRM · remote PowerShell",edge:[!1,!1],host:[!0,!1]},{p:"3306",s:"MySQL",edge:[!1,!1],host:[!0,!1]},{p:"33060",s:"MySQL X Protocol",edge:[!1,!1],host:[!0,!1]},{p:"554+",s:"Casting and media streaming",edge:[!1,!1],host:[!0,!1]}],n=document.getElementById("rows");var s=document.getElementById("btn-before"),o=document.getElementById("btn-after"),a=document.getElementById("board-title");function i(e){s.setAttribute("aria-pressed",0===e),o.setAttribute("aria-pressed",1===e),a.textContent=0===e?"Before hardening":"After hardening",function(e){n.innerHTML=t.map(function(t,n){var s,o,a,i=t.edge[e],r=t.host[e],d=i?r?"100%":"66.6%":"33.3%",l=i&&r;return l&&t.pub?(s="pub",o="Public by design",a="ok"):l?(s="crit",o="Exposed to internet",a="bad"):i||r?(s="warn",o="One layer only",a=""):(s="good",o="Blocked twice",a=""),'<div class="row"><div class="svc"><b>'+t.p+"</b><span>"+t.s+'</span></div><div class="track"><span class="gate'+(i?" open":"")+'" style="left:33.3%"></span><span class="gate'+(r?" open":"")+'" style="left:66.6%"></span><span class="endpoint"></span><span class="pkt '+a+'" style="--stop:'+d+";animation-delay:"+.22*n+'s"></span></div><span class="pill '+s+'">'+o+"</span></div>"}).join("")}(e)}s.addEventListener("click",function(){i(0)}),o.addEventListener("click",function(){i(1)}),i(1);var r=[{id:"edge",name:"Edge gateway",intro:"The NSX edge in VMware Cloud Director decides what reaches the VM at all. The rule set already ended in a default drop; the gap was remote administration.",tasks:[{t:"Reviewed every firewall and NAT rule",s:"Confirmed a default-drop policy sits behind the allow rules",what:"Read the full edge rule set and matched each firewall rule to its NAT rule.",why:"An allow rule and a port forward only expose a service together. Reviewing them as pairs shows what is truly reachable."},{t:"Closed Remote Desktop to the internet",s:"The RDP allow rule had Source set to Any",what:"Deactivated the firewall rule that allowed RDP from any address.",why:"Internet-exposed RDP is one of the most common entry points into Windows servers. Bots attempt logins against it continuously."},{t:"Removed the RDP port forward",s:"DNAT for port 3389 deactivated",what:"Deactivated the matching DNAT rule so the port is closed in both places.",why:"If only one of the pair is removed, a later change to the other can reopen the port without anyone noticing."},{t:"Moved administration to the VM console",s:"Out-of-band access that needs no open port",what:"Server administration now goes through the Cloud Director web console.",why:"The console connects through the hypervisor, so no management port has to face the internet. The trade-off, clipboard and file transfer are limited, was accepted."}]},{id:"host",name:"Windows Server",intro:"A second firewall and a reduced set of services on the host mean a single mistake at the edge cannot expose the machine.",tasks:[{t:"Brought the OS fully up to date",s:"All pending updates installed and the server restarted",what:"Installed every pending Windows update, including the monthly Malicious Software Removal Tool, and rebooted to complete them.",why:"Patches do not protect anything until they are installed and the restart has happened."},{t:"Disabled 32 inbound firewall rules",s:"MySQL, RDP, SSH, WinRM, casting and device discovery",what:"Audited every enabled inbound allow rule and switched off the ones a web server does not need.",why:"Windows ships with many convenience rules enabled. Each one is a door that opens the moment the edge firewall is misconfigured.",code:'Get-NetFirewallRule -Direction Inbound -Enabled True -Action Allow\nGet-NetFirewallRule -DisplayName "Port 3306","Port 33060" | Disable-NetFirewallRule\nGet-NetFirewallRule -DisplayName "Remote Desktop*" -Direction Inbound | Disable-NetFirewallRule\nGet-NetFirewallRule -DisplayName "OpenSSH*","Windows Remote Management*" -Direction Inbound | Disable-NetFirewallRule'},{t:"Set account lockout and password policy",s:"Lock after 5 failed attempts for 15 minutes; 14-character minimum",what:"Applied a lockout threshold and minimum password length, disabled the Guest account, and reviewed membership of the Administrators group.",why:"Lockout turns password guessing from thousands of attempts per hour into a handful.",code:"net accounts /lockoutthreshold:5 /lockoutduration:15 /lockoutwindow:15 /minpwlen:14\nnet user Guest /active:no\nnet localgroup Administrators"},{t:"Switched off unused services",s:"SMB version 1, Print Spooler, Remote Desktop",what:"Disabled legacy file sharing, the print service and the Remote Desktop service itself.",why:"SMBv1 and the Print Spooler have both been used in major attacks, and a web server needs neither.",code:"Set-SmbServerConfiguration -EnableSMB1Protocol $false -Force\nStop-Service Spooler; Set-Service Spooler -StartupType Disabled"},{t:"Turned on sign-in auditing",s:"Successful and failed logons recorded; Defender status verified",what:"Enabled logon auditing and confirmed Microsoft Defender real-time protection and signatures are current.",why:"Without an audit trail there is no way to tell an attempted break-in from a successful one.",code:'auditpol /set /category:"Logon/Logoff" /success:enable /failure:enable\nGet-MpComputerStatus | Select AntivirusEnabled, RealTimeProtectionEnabled'}]},{id:"iis",name:"IIS",intro:"The web server should serve the site and nothing else: no file listings, no version banners, no direct access to configuration files.",tasks:[{t:"Blocked direct requests for sensitive files",s:"wp-config.php, xmlrpc.php and debug.log return 404",what:"Added request-filtering hidden segments to the site configuration.",why:"These files hold credentials, accept remote login attempts, or leak internal paths. No visitor ever needs to request them."},{t:"Added security response headers",s:"And removed the PHP and server version banners",what:"Set X-Content-Type-Options, X-Frame-Options and Referrer-Policy, and removed X-Powered-By and the Server header.",why:"The headers stop clickjacking and content-type tricks in the browser. Hiding versions denies scanners an easy way to match the server to known flaws."},{t:"Disabled directory browsing",s:"Folders never list their contents",what:"Turned the feature off at site level and in web.config.",why:"A folder listing hands an attacker a map of plugin files, backups and uploads."},{t:"Verified the application pool identity",s:"Runs as ApplicationPoolIdentity, not an administrator",what:"Checked the worker process account in the pool's advanced settings.",why:"If the site is compromised, the attacker inherits this account's rights. A low-privilege identity limits the damage to the site."},{t:"Confirmed WebDAV and FTP are not installed",s:"No unused publishing features present",what:"Queried the installed role services.",why:"Both allow file uploads to the server and are frequent targets when left enabled by default.",code:"Get-WindowsFeature Web-DAV-Publishing, Web-Ftp-Server, Web-Ftp-Service"},{t:"Confirmed request logging",s:"Every request recorded for investigation",what:"Verified IIS logging is enabled for the site and noted the log location.",why:"Logs are the evidence used to reconstruct an incident and to tune rate limits."},{t:"Set up per-visitor rate limiting",s:"Dynamic IP Restrictions, started in logging-only mode",what:"Installed the IP security feature and configured limits on concurrent requests and requests over time.",why:"Throttles crude floods and aggressive scanners. Starting in log-only mode avoids blocking real visitors while thresholds are tuned.",code:"Install-WindowsFeature Web-IP-Security"}]},{id:"wp",name:"WordPress",intro:"Application-level settings and file permissions decide how far an attacker gets after finding a vulnerable plugin.",tasks:[{t:"Audited wp-config.php line by line",s:"Debug output hidden from visitors; dashboard file editor disabled",what:"Reviewed every setting, set WP_DEBUG_DISPLAY to false, and confirmed DISALLOW_FILE_EDIT is on.",why:"Visible debug errors reveal file paths and database queries. The built-in editor lets a stolen admin login become code execution.",code:"define( 'WP_DEBUG', false );\ndefine( 'WP_DEBUG_LOG', false );\ndefine( 'WP_DEBUG_DISPLAY', false );\ndefine( 'DISALLOW_FILE_EDIT', true );"},{t:"Restricted who can read the config file",s:"Inheritance removed; read-only for the web server",what:"Replaced inherited NTFS permissions on wp-config.php with an explicit list: administrators and SYSTEM in full, IIS read-only.",why:"By default any local user account could read the database password, and the web process could overwrite the file.",code:'icacls "…\\wp-config.php" /inheritance:r /grant:r "Administrators:F" "SYSTEM:F" "IIS_IUSRS:R" "IUSR:R"'},{t:"Audited NTFS permissions on the site folder",s:"No Everyone entry; no web account with Full Control",what:"Read the full access list and made a deliberate choice to keep write access so automatic security updates continue to work.",why:"Permissions are a trade-off. A fully read-only site is tighter but stops WordPress patching itself, which is the bigger risk for a small team.",code:'icacls "C:\\inetpub\\wwwroot\\wordpress"'},{t:"Blocked XML-RPC",s:"A legacy remote API used for password guessing",what:"Denied requests to xmlrpc.php at the web server.",why:"The endpoint lets bots test many passwords per request and is unused unless the mobile app or Jetpack is in play."}]},{id:"db",name:"Database",intro:"The database only needs to talk to the application on the same machine.",tasks:[{t:"Confirmed a local-only database connection",s:"WordPress connects over 127.0.0.1",what:"Verified the application reaches MySQL through the loopback address.",why:"A loopback connection needs no firewall rule, so the database ports can be closed to the network entirely."},{t:"Closed MySQL ports at the host firewall",s:"3306 and 33060 no longer accept network connections",what:"Disabled both inbound rules created by the MySQL installer.",why:"Combined with the edge default-drop rule, the database is now unreachable from outside at two independent layers."},{t:"Verified a dedicated, least-privilege login",s:"WordPress does not use the root account",what:"Confirmed the site uses its own database user with a strong password.",why:"If the site is compromised, the attacker gets one database rather than the whole server."}]}],d=document.getElementById("tabs"),l=document.getElementById("tasks"),c=document.getElementById("layer-intro");function p(e){return e.replace(/&/g,"&amp;").replace(/</g,"&lt;")}function u(e){var t=r.filter(function(t){return t.id===e})[0];Array.prototype.forEach.call(d.children,function(t){t.setAttribute("aria-selected",t.dataset.id===e)}),c.textContent=t.intro,l.innerHTML=t.tasks.map(function(e,t){return'<li class="task" data-open="false" style="animation-delay:'+.06*t+'s"><button type="button" aria-expanded="false"><svg class="tick" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="10"/><path d="M5.5 10.5l3 3 6-6.5" style="animation-delay:'+(.15+.06*t)+'s"/></svg><span class="t"><h3>'+p(e.t)+"</h3><span>"+p(e.s)+'</span></span><span class="chev" aria-hidden="true">+</span></button><div class="detail" hidden><p><b>What changed.</b> '+p(e.what)+"</p><p><b>Why it matters.</b> "+p(e.why)+"</p>"+(e.code?"<pre>"+p(e.code)+"</pre>":"")+"</div></li>"}).join("")}d.innerHTML=r.map(function(e){var t={edge:"shield",host:"server",iis:"globe",wp:"app",db:"db"}[e.id];return'<button type="button" role="tab" data-id="'+e.id+'"><svg class="ic" aria-hidden="true"><use href="#i-'+t+'"/></svg>'+e.name+" <em>"+e.tasks.length+"</em></button>"}).join(""),d.addEventListener("click",function(e){var t=e.target.closest("button");t&&u(t.dataset.id)}),l.addEventListener("click",function(e){var t=e.target.closest(".task > button");if(t){var n=t.parentNode,s="true"!==n.dataset.open;n.dataset.open=s,t.setAttribute("aria-expanded",s),n.querySelector(".detail").hidden=!s}}),u("edge");function h(e,t){e.innerHTML=t.map(function(e,t){var n=p(e.code).split("\n").map(function(e){return/^\s*(#|--)/.test(e)?'<span class="c">'+e+"</span>":e}).join("\n");return'<div class="cmd'+(e.wide?" wide":"")+'"><div class="cmd-head"><div><small>'+e.sh+"</small><h3>"+e.t+'</h3></div><button type="button" class="copy" data-i="'+t+'">Copy</button></div><pre>'+n+"</pre><p>"+e.note+"</p></div>"}).join(""),e.addEventListener("click",function(e){var n=e.target.closest(".copy");if(n){var s=n.closest(".cmd").querySelector("pre");try{navigator.clipboard.writeText(t[+n.dataset.i].code).then(function(){n.textContent="Copied",n.classList.add("done"),setTimeout(function(){n.textContent="Copy",n.classList.remove("done")},1600)},o)}catch(e){o()}}function o(){var e=document.createRange();e.selectNodeContents(s);var t=window.getSelection();t.removeAllRanges(),t.addRange(e),n.textContent="Selected"}})}h(document.getElementById("cmds"),[{t:"Identify the platform",sh:"PowerShell",note:"Confirms the OS is a supported release and shows which web server owns port 80.",code:"(Get-ComputerInfo).OsName\nGet-Process -Id (Get-NetTCPConnection -LocalPort 80 -State Listen).OwningProcess"},{t:"Accounts and lockout policy",sh:"Command Prompt",note:"The * makes Windows prompt for the password, so it never appears on screen or in history.",code:"# Review\nnet user\nnet localgroup Administrators\nnet accounts\n\n# Harden\nnet user Guest /active:no\nnet accounts /lockoutthreshold:5 /lockoutduration:15 /lockoutwindow:15 /minpwlen:14\n\n# Named admin account in place of the built-in one\nnet user yourname * /add\nnet localgroup Administrators yourname /add"},{t:"Windows Firewall: audit",sh:"PowerShell",note:"All three profiles should be enabled with inbound traffic blocked by default.",code:"Get-NetFirewallProfile | Select Name, Enabled, DefaultInboundAction\nSet-NetFirewallProfile -All -Enabled True -DefaultInboundAction Block\n\n# Every inbound rule that currently allows traffic\nGet-NetFirewallRule -Direction Inbound -Enabled True -Action Allow | Select DisplayName, Profile"},{t:"Windows Firewall: disable unneeded rules",sh:"PowerShell",note:"Rules are disabled, not deleted. Enable-NetFirewallRule with the same name reverses any of them.",code:'Get-NetFirewallRule -DisplayName "Port 3306","Port 33060" | Disable-NetFirewallRule\nGet-NetFirewallRule -DisplayName "Remote Desktop*" -Direction Inbound | Disable-NetFirewallRule\nGet-NetFirewallRule -DisplayName "OpenSSH*","Windows Remote Management*" -Direction Inbound | Disable-NetFirewallRule\nGet-NetFirewallRule -DisplayName "Cast to Device*","Wireless Display*","DIAL*","WFD*","AllJoyn*","Microsoft Media Foundation*" -Direction Inbound | Disable-NetFirewallRule'},{t:"Unused services",sh:"PowerShell",note:"Legacy file sharing, printing and SSH have no role on a single-purpose web server.",code:"Set-SmbServerConfiguration -EnableSMB1Protocol $false -Force\nStop-Service Spooler; Set-Service Spooler -StartupType Disabled\n\nGet-Service sshd | Select Name, Status, StartType\nStop-Service sshd; Set-Service sshd -StartupType Disabled"},{t:"Antivirus and sign-in auditing",sh:"PowerShell",note:"Failed logons then appear in the Security event log as Event ID 4625.",code:'Get-MpComputerStatus | Select AntivirusEnabled, RealTimeProtectionEnabled, AntivirusSignatureLastUpdated\nauditpol /set /category:"Logon/Logoff" /success:enable /failure:enable'},{t:"IIS features",sh:"PowerShell",note:"Checks for unused publishing features and adds the module that provides per-visitor rate limiting.",code:"Get-WindowsFeature Web-DAV-Publishing, Web-Ftp-Server, Web-Ftp-Service\nGet-WindowsFeature Web-IP-Security\nInstall-WindowsFeature Web-IP-Security\n\n# Open IIS Manager\ninetmgr"},{t:"NTFS permissions",sh:"Command Prompt",note:"Read the existing access list first. The last line restores inherited permissions if the site stops loading.",code:'# Audit the site folder\nicacls "C:\\inetpub\\wwwroot\\wordpress"\n\n# Lock down the config file\nicacls "C:\\inetpub\\wwwroot\\wordpress\\wp-config.php" /inheritance:r /grant:r "Administrators:F" "SYSTEM:F" "IIS_IUSRS:R" "IUSR:R"\n\n# Roll back\nicacls "C:\\inetpub\\wwwroot\\wordpress\\wp-config.php" /reset'},{t:"Hardened web.config",sh:"XML · site root",wide:!0,note:"Back up the existing file first. The HTTPS redirect stays commented out until a certificate is installed.",code:'<?xml version="1.0" encoding="UTF-8"?>\n<configuration>\n  <system.webServer>\n\n    <defaultDocument>\n      <files><add value="index.php" /></files>\n    </defaultDocument>\n\n    <directoryBrowse enabled="false" />\n\n    <security>\n      <requestFiltering removeServerHeader="true">\n        <hiddenSegments>\n          <add segment="wp-config.php" />\n          <add segment="xmlrpc.php" />\n          <add segment="debug.log" />\n        </hiddenSegments>\n      </requestFiltering>\n    </security>\n\n    <httpProtocol>\n      <customHeaders>\n        <remove name="X-Powered-By" />\n        <remove name="X-Content-Type-Options" />\n        <add name="X-Content-Type-Options" value="nosniff" />\n        <remove name="X-Frame-Options" />\n        <add name="X-Frame-Options" value="SAMEORIGIN" />\n        <remove name="Referrer-Policy" />\n        <add name="Referrer-Policy" value="strict-origin-when-cross-origin" />\n      </customHeaders>\n    </httpProtocol>\n\n    <rewrite>\n      <rules>\n        \x3c!-- Enable once HTTPS works\n        <rule name="HTTPS redirect" stopProcessing="true">\n          <match url="(.*)" />\n          <conditions><add input="{HTTPS}" pattern="off" /></conditions>\n          <action type="Redirect" url="https://{HTTP_HOST}/{R:1}" redirectType="Permanent" />\n        </rule>\n        --\x3e\n        <rule name="WordPress Rule" stopProcessing="true">\n          <match url=".*" />\n          <conditions logicalGrouping="MatchAll">\n            <add input="{REQUEST_FILENAME}" matchType="IsFile" negate="true" />\n            <add input="{REQUEST_FILENAME}" matchType="IsDirectory" negate="true" />\n          </conditions>\n          <action type="Rewrite" url="index.php" />\n        </rule>\n      </rules>\n    </rewrite>\n\n  </system.webServer>\n</configuration>'},{t:"WordPress debug settings",sh:"PHP · wp-config.php",note:"Errors are never shown to visitors, and the dashboard file editor stays off.",code:"define( 'WP_DEBUG', false );\ndefine( 'WP_DEBUG_LOG', false );\ndefine( 'WP_DEBUG_DISPLAY', false );\ndefine( 'DISALLOW_FILE_EDIT', true );"},{t:"Verify after every change",sh:"PowerShell",note:"Both services should be Running with an Automatic start type. Then load the site, the admin login, and confirm wp-config.php returns 404.",code:"Get-Service W3SVC, MySQL* | Select Name, Status, StartType"}]);h(document.getElementById("sql"),[{t:"Create a WordPress user with the lowest role",sh:"SQL · WordPress database",wide:!0,note:"WordPress accepts the MD5 hash once and replaces it with a stronger hash at the first sign-in. Change the password straight after, since it was typed in plain text.",code:"-- 1. Create the user\nINSERT INTO wp_users (user_login, user_pass, user_nicename, user_email, user_registered, user_status, display_name)\nVALUES ('newuser', MD5('ChangeThisPassword!'), 'newuser', 'newuser@example.com', NOW(), 0, 'New User');\n\n-- 2. Get the new user's ID\nSET @uid = LAST_INSERT_ID();\n\n-- 3. Assign the lowest role (Subscriber)\nINSERT INTO wp_usermeta (user_id, meta_key, meta_value)\nVALUES (@uid, 'wp_capabilities', 'a:1:{s:10:\"subscriber\";b:1;}'),\n       (@uid, 'wp_user_level', '0');"},{t:"Raise the role to Editor",sh:"SQL · WordPress database",note:"Takes effect on the next page load. The account can then edit and publish every page and post, but cannot touch plugins, themes, users or settings.",code:"UPDATE wp_usermeta\nSET meta_value = 'a:1:{s:6:\"editor\";b:1;}'\nWHERE user_id = (SELECT ID FROM wp_users WHERE user_login = 'newuser')\n  AND meta_key = 'wp_capabilities';\n\nUPDATE wp_usermeta\nSET meta_value = '7'\nWHERE user_id = (SELECT ID FROM wp_users WHERE user_login = 'newuser')\n  AND meta_key = 'wp_user_level';"},{t:"Check which role each user holds",sh:"SQL · WordPress database",note:"A read-only check. A user with no row here, or a meta key with the wrong prefix, has no role at all.",code:"SELECT u.ID, u.user_login, m.meta_value AS role\nFROM wp_users u\nJOIN wp_usermeta m ON m.user_id = u.ID\nWHERE m.meta_key = 'wp_capabilities';"},{t:"Restricted database account for the site",sh:"SQL · MySQL server",note:"These four privileges cover day-to-day running. Core and plugin updates also need CREATE, ALTER, INDEX and DROP, which can be granted only while updating.",code:"CREATE USER 'wp_site'@'localhost' IDENTIFIED BY 'StrongPasswordHere';\nGRANT SELECT, INSERT, UPDATE, DELETE ON wordpress_db.* TO 'wp_site'@'localhost';\nFLUSH PRIVILEGES;"},{t:"The same with WP-CLI",sh:"Command line · site folder",note:"An alternative where WP-CLI is installed. It hashes the password properly and avoids hand-written serialised values.",code:"# Create the user with a chosen role\nwp user create newuser newuser@example.com --role=subscriber\n\n# Change the role later\nwp user set-role newuser editor"}]);var m=[{n:"Subscriber",lv:0,badge:["warn","Tested first"],note:"The first test account. It could sign in, but the Pages menu was missing, so the Avada pages could not be opened."},{n:"Contributor",lv:1,note:"Can draft posts for someone else to review. Still no access to Pages."},{n:"Author",lv:2,note:"Can publish their own posts and upload media. Still no access to Pages."},{n:"Editor",lv:7,badge:["good","Role assigned"],note:"The lowest built-in role that can open and edit the Avada pages. No access to plugins, themes, users or settings."},{n:"Administrator",lv:10,badge:["crit","Not handed out"],note:"Full control of the site. Kept for named administrators and not used for day-to-day content work."}],w=[["Sign in and manage their own profile",0],["Write their own posts as drafts",1],["Publish their own posts and upload media",2],["See the Pages menu and open the Avada pages",3],["Edit and publish other people's content",3],["Moderate comments",3],["Install or edit plugins and themes",4],["Manage users and site settings",4]],g=document.getElementById("role-tabs");function f(e){var t=m[e],n=t.n.toLowerCase();Array.prototype.forEach.call(g.children,function(t,n){t.setAttribute("aria-pressed",n===e)}),document.getElementById("role-name").textContent=t.n,document.getElementById("role-note").textContent=t.note;var s=document.getElementById("role-badge");s.hidden=!t.badge,t.badge&&(s.className="pill "+t.badge[0],s.textContent=t.badge[1]);var o=document.getElementById("role-meter");o.style.width=20*(e+1)+"%",o.className=4===e?"max":"",document.getElementById("caps").innerHTML=w.map(function(t,n){var s=e>=t[1];return'<li class="'+(s?"yes":"no")+'" style="animation-delay:'+.04*n+'s"><svg class="ic" aria-hidden="true"><use href="#i-'+(s?"check":"x")+'"/></svg><span>'+p(t[0])+(s?"":' <span style="position:absolute;clip:rect(0 0 0 0)">(not allowed)</span>')+"</span></li>"}).join(""),document.getElementById("role-meta").textContent="wp_capabilities   a:1:{s:"+n.length+':"'+n+'";b:1;}\nwp_user_level     '+t.lv}g.innerHTML=m.map(function(e,t){for(var n="",s=0;s<5;s++)n+="<i"+(s<=t?' class="on"':"")+"></i>";return'<button type="button" data-i="'+t+'" aria-pressed="false"><span class="lvl" aria-hidden="true">'+n+"</span>"+e.n+"</button>"}).join(""),g.addEventListener("click",function(e){var t=e.target.closest("button");t&&f(+t.dataset.i)}),f(3);var b=document.getElementById("specimen"),y=document.getElementById("spec-bad"),v=document.getElementById("spec-ok"),S=document.getElementById("spec-pill");function E(e){b.dataset.state=e?"clean":"infected",y.setAttribute("aria-pressed",!e),v.setAttribute("aria-pressed",e),S.className="pill "+(e?"good":"crit"),S.textContent=e?"No injected links":"2 injected links"}y.addEventListener("click",function(){E(!1)}),v.addEventListener("click",function(){E(!0)});h(document.getElementById("scan-sql"),[{t:"Select the WordPress database",sh:"SQL · MySQL server",note:"The right database is the one named as DB_NAME in wp-config.php. SHOW TABLES should list wp_posts and wp_options.",code:"SHOW DATABASES;\nUSE `wordpress_db`;\nSHOW TABLES;"},{t:"Administrator accounts",sh:"SQL · WordPress database",note:"Every account listed should be a person the team recognises. An unknown administrator is the most serious finding.",code:"SELECT u.ID, u.user_login, u.user_email, u.user_registered\nFROM wp_users u\nJOIN wp_usermeta m ON m.user_id = u.ID\nWHERE m.meta_key LIKE '%capabilities'\n  AND m.meta_value LIKE '%administrator%'\nORDER BY u.user_registered DESC;"},{t:"Search for known bad domains",sh:"SQL · WordPress database",wide:!0,note:"LIKE has no time limit, unlike REGEXP, which stopped on page-builder content hundreds of kilobytes long. Repeat the same test against wp_postmeta.meta_value and wp_options.option_value.",code:"SELECT ID, post_type, post_status, post_title, post_modified\nFROM wp_posts\nWHERE post_content LIKE '%spam-site-one.example%'\n   OR post_content LIKE '%spam-site-two.example%'\n   OR post_excerpt LIKE '%spam-site-one.example%'\n   OR post_title   LIKE '%spam-site-one.example%'\nORDER BY post_modified DESC;"},{t:"List every page with an external link",sh:"SQL · WordPress database",wide:!0,note:"The query strips the site's own addresses first, so any link that remains points somewhere else. This is the check that finds domains nobody has reported yet.",code:"SELECT ID, post_type, post_status, post_title, post_modified\nFROM wp_posts\nWHERE REPLACE(REPLACE(REPLACE(post_content,\n        'https://www.example.com.au', ''),\n        'http://www.example.com.au', ''),\n        'https://booking.example.com.au', '')\n      LIKE '%href=\"http%'\nORDER BY post_modified DESC;"},{t:"Hidden links and injected code",sh:"SQL · WordPress database",note:"Expect some genuine matches, such as a contact-form script or a hidden mobile menu. Review each row by eye.",code:"SELECT ID, post_type, post_title, post_modified\nFROM wp_posts\nWHERE post_type <> 'revision'\n  AND (post_content LIKE '%display:none%'\n    OR post_content LIKE '%display: none%'\n    OR post_content LIKE '%visibility:hidden%'\n    OR post_content LIKE '%<script%'\n    OR post_content LIKE '%<iframe%'\n    OR post_content LIKE '%base64_decode%');"},{t:"Core settings and recent changes",sh:"SQL · WordPress database",note:"The site address and admin email must be the real ones, and registration should be closed. Compare the dates with when staff actually edited the site.",code:"SELECT option_name, option_value\nFROM wp_options\nWHERE option_name IN ('siteurl', 'home', 'admin_email',\n      'users_can_register', 'default_role');\n\nSELECT ID, post_type, post_title, post_modified\nFROM wp_posts\nWHERE post_type <> 'revision'\nORDER BY post_modified DESC\nLIMIT 50;"},{t:"Remove one injected link",sh:"SQL · WordPress database",wide:!0,note:"Back up the database first. The statement removes one exact string from one row, so nothing else on the page can change. Clear the page-builder and site cache afterwards, and check older revisions before restoring any of them.",code:"-- 1. Confirm the exact text is there\nSELECT ID, post_title\nFROM wp_posts\nWHERE ID = 22\n  AND post_content LIKE '%<a href=\"http://spam-site-one.example\">http://spam-site-one.example</a> %';\n\n-- 2. Remove the link and its trailing space\nUPDATE wp_posts\nSET post_content = REPLACE(post_content,\n    '<a href=\"http://spam-site-one.example\">http://spam-site-one.example</a> ', '')\nWHERE ID = 22;"}]),e||Array.prototype.forEach.call(document.querySelectorAll("[data-count]"),function(e){var t=+e.dataset.count,n=null;requestAnimationFrame(function s(o){n||(n=o);var a=Math.min(1,(o-n)/900);e.textContent=Math.round(t*(1-Math.pow(1-a,3))),a<1&&requestAnimationFrame(s)})})}()</script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>WordPress on IIS Hardening</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800;900&family=Public+Sans:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a site-inspection case file. Blueprint sheet, hi-vis tape for status, defect-register conventions. */
+:root{
+  --paper:#edf1f5; --sheet:#ffffff; --ink:#13233b; --ink-2:#4b5b73; --rule:#cdd6e1; --grid:#dbe4ee;
+  --blue:#1f5fbf; --blue-soft:#e3ecfa; --hivis:#f4b400; --on-hivis:#13233b;
+  --ok:#1b7a49; --ok-soft:#e1f2e8; --warn:#a85f00; --warn-soft:#fbeedb; --crit:#bf3326; --crit-soft:#fbe4e1;
+  --code-bg:#0f1b2d; --code-fg:#d9e4f2; --code-dim:#7f93ad; --code-tag:#7fb2ff; --code-attr:#f4c552; --code-str:#8fd6a8;
+  --f-display:"Big Shoulders Display","Arial Narrow",Impact,sans-serif;
+  --f-body:"Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,"Cascadia Code",Consolas,monospace;
+  --radius:6px;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --paper:#0a1320; --sheet:#101c2e; --ink:#e5ecf5; --ink-2:#9db0c7; --rule:#24354e; --grid:#16243a;
+  --blue:#6ea4ff; --blue-soft:#15284a; --hivis:#f6c233; --on-hivis:#13233b;
+  --ok:#4fc58b; --ok-soft:#10301f; --warn:#f0a940; --warn-soft:#33240c; --crit:#ff6f5f; --crit-soft:#3a1714;
+  --code-bg:#060d18; color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --paper:#0a1320; --sheet:#101c2e; --ink:#e5ecf5; --ink-2:#9db0c7; --rule:#24354e; --grid:#16243a;
+  --blue:#6ea4ff; --blue-soft:#15284a; --hivis:#f6c233; --on-hivis:#13233b;
+  --ok:#4fc58b; --ok-soft:#10301f; --warn:#f0a940; --warn-soft:#33240c; --crit:#ff6f5f; --crit-soft:#3a1714;
+  --code-bg:#060d18; color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+[hidden]{display:none!important}
+img,svg{max-width:100%}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.6;
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:32px 32px;}
+.wrap{max-width:1120px;margin:0 auto;padding-inline:20px;padding-block:0 64px}
+a{color:var(--blue)}
+a:focus-visible,button:focus-visible,input:focus-visible{outline:3px solid var(--hivis);outline-offset:2px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;line-height:1.02;margin:0}
+h2{font-size:clamp(2rem,4.5vw,3rem);font-weight:800;letter-spacing:.01em;text-transform:uppercase}
+h3{font-size:1.45rem;font-weight:800;letter-spacing:.02em;text-transform:uppercase}
+p{margin:0}
+.lede{max-width:65ch;color:var(--ink-2)}
+.eyebrow{font-family:var(--f-mono);font-size:.75rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-2)}
+code{font-family:var(--f-mono);font-size:.86em;background:var(--blue-soft);color:var(--ink);padding:.1em .35em;border-radius:4px;overflow-wrap:anywhere}
+
+/* hazard tape */
+.tape{height:10px;background:repeating-linear-gradient(-45deg,var(--hivis) 0 14px,var(--ink) 14px 28px)}
+
+/* top nav */
+nav.toc{position:sticky;top:env(safe-area-inset-top,0px);z-index:10;background:var(--sheet);border-bottom:1px solid var(--rule)}
+nav.toc .inner{max-width:1120px;margin:0 auto;padding-inline:20px;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
+nav.toc a{flex:none;font-family:var(--f-mono);font-size:.74rem;letter-spacing:.08em;text-transform:uppercase;text-decoration:none;color:var(--ink-2);padding:12px 10px;border-bottom:3px solid transparent}
+nav.toc a:hover{color:var(--ink);border-bottom-color:var(--hivis)}
+
+/* hero */
+.hero{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:40px;align-items:center;padding-block:48px 28px}
+.hero h1{font-size:clamp(3rem,8vw,6.2rem);font-weight:900;text-transform:uppercase;letter-spacing:-.005em}
+.hero h1 .mark{background:linear-gradient(transparent 58%,var(--hivis) 58% 92%,transparent 92%)}
+.hero .stack{display:flex;flex-direction:column;gap:18px;min-width:0}
+.meta{display:flex;flex-wrap:wrap;gap:8px 18px;font-family:var(--f-mono);font-size:.78rem;color:var(--ink-2)}
+.meta b{color:var(--ink);font-weight:600}
+.plan{background:var(--sheet);border:1px solid var(--rule);border-radius:var(--radius);padding:14px;position:relative;max-width:100%}
+.plan svg{display:block;width:100%;height:auto}
+.stamp{position:absolute;right:6%;bottom:12%;transform:rotate(-12deg);font-family:var(--f-display);font-weight:900;font-size:clamp(1.4rem,3.4vw,2.2rem);letter-spacing:.08em;color:var(--ok);border:4px solid var(--ok);padding:2px 14px;border-radius:6px;background:color-mix(in srgb,var(--sheet) 80%,transparent);animation:stamp .7s cubic-bezier(.2,1.6,.4,1) .6s both}
+@keyframes stamp{from{transform:rotate(-12deg) scale(1.8)}to{transform:rotate(-12deg) scale(1)}}
+.scan{animation:scan 3.6s ease-in-out infinite}
+@keyframes scan{0%,100%{transform:translateY(0)}50%{transform:translateY(190px)}}
+@media (prefers-reduced-motion:reduce){.scan,.stamp{animation:none}}
+
+/* score tiles */
+.scores{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-block:8px 0}
+.score{background:var(--sheet);border:1px solid var(--rule);border-radius:var(--radius);padding:14px 16px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.score .k{font-family:var(--f-mono);font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2)}
+.score .v{font-family:var(--f-display);font-weight:800;font-size:clamp(1.45rem,5.2vw,2.2rem);line-height:1;display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;font-variant-numeric:tabular-nums}
+.score .from{color:var(--crit);text-decoration:line-through;text-decoration-thickness:3px;opacity:.85}
+.score .arrow{color:var(--ink-2);font-size:1.4rem}
+.score .to{color:var(--ok)}
+
+section.block{margin-top:64px;display:flex;flex-direction:column;gap:20px}
+.head{display:flex;flex-direction:column;gap:8px}
+.card{background:var(--sheet);border:1px solid var(--rule);border-radius:var(--radius);padding:22px;min-width:0}
+
+/* diagram */
+.diagram{overflow-x:auto}
+.diagram svg{min-width:820px;width:100%;height:auto;display:block}
+.dg-box{fill:var(--sheet);stroke:var(--ink);stroke-width:1.5}
+.dg-zone{fill:var(--blue-soft);stroke:var(--blue);stroke-width:1.2;stroke-dasharray:6 5}
+.dg-t{fill:var(--ink);font-family:var(--f-body);font-size:13px;font-weight:700}
+.dg-s{fill:var(--ink-2);font-family:var(--f-mono);font-size:10.5px}
+.dg-z{fill:var(--blue);font-family:var(--f-mono);font-size:10.5px;letter-spacing:.1em}
+.dg-line{stroke:var(--ink);stroke-width:1.6;fill:none}
+.dg-ok{stroke:var(--ok);stroke-width:2;fill:none}
+.dg-block{stroke:var(--crit);stroke-width:2;fill:none;stroke-dasharray:5 4}
+.dg-x{stroke:var(--crit);stroke-width:3.2}
+.dg-hv{fill:var(--hivis)}
+.dg-arrowfill{fill:var(--ink)}
+.dg-okfill{fill:var(--ok)}
+.dg-crit{fill:var(--crit);font-family:var(--f-mono);font-size:10.5px;font-weight:600}
+
+/* register table */
+.tablebox{overflow-x:auto;background:var(--sheet);border:1px solid var(--rule);border-radius:var(--radius)}
+table{border-collapse:collapse;width:100%;min-width:760px;font-size:.92rem}
+th,td{text-align:left;padding:12px 14px;border-bottom:1px solid var(--rule);vertical-align:top}
+th{font-family:var(--f-mono);font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2);background:var(--paper)}
+tr:last-child td{border-bottom:0}
+td.ref{font-family:var(--f-mono);font-weight:600;white-space:nowrap}
+.pill{display:inline-block;font-family:var(--f-mono);font-size:.7rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:3px 9px;border-radius:999px;white-space:nowrap}
+.p-crit{background:var(--crit-soft);color:var(--crit)}
+.p-major{background:var(--warn-soft);color:var(--warn)}
+.p-minor{background:var(--blue-soft);color:var(--blue)}
+.p-ok{background:var(--ok-soft);color:var(--ok)}
+.p-open{background:var(--hivis);color:var(--on-hivis)}
+.p-unk{background:var(--paper);color:var(--ink-2);border:1px dashed var(--ink-2)}
+
+/* fixes */
+.fixes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.fix{display:flex;flex-direction:column;gap:12px}
+.fix .top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap}
+.fix ol,.fix ul{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:6px}
+.fix li{padding-left:2px}
+.note{font-size:.9rem;color:var(--ink-2);border-left:3px solid var(--hivis);padding-left:12px}
+
+/* layered defence */
+.layers{display:flex;flex-direction:column;gap:0;border:1px solid var(--rule);border-radius:var(--radius);overflow:hidden;background:var(--sheet)}
+.layer{display:grid;grid-template-columns:150px minmax(0,1fr) auto;gap:16px;align-items:center;padding:14px 18px;border-bottom:1px solid var(--rule)}
+.layer:last-child{border-bottom:0}
+.layer .lv{font-family:var(--f-display);font-weight:800;font-size:1.15rem;text-transform:uppercase;letter-spacing:.03em}
+.layer p{color:var(--ink-2);font-size:.93rem}
+
+/* code */
+.tabs{display:flex;gap:4px;flex-wrap:wrap}
+.tab{font-family:var(--f-mono);font-size:.78rem;padding:9px 14px;border:1px solid var(--rule);border-bottom:0;border-radius:var(--radius) var(--radius) 0 0;background:var(--paper);color:var(--ink-2);cursor:pointer}
+.tab[aria-selected="true"]{background:var(--code-bg);color:var(--code-fg);border-color:var(--code-bg)}
+.codebox{position:relative;background:var(--code-bg);border-radius:0 var(--radius) var(--radius) var(--radius);min-width:0}
+.codebox .path{font-family:var(--f-mono);font-size:.74rem;color:var(--code-dim);padding:12px 16px 0;padding-right:90px;overflow-wrap:anywhere}
+pre{margin:0;padding:14px 16px 18px;overflow-x:auto;font-family:var(--f-mono);font-size:.8rem;line-height:1.55;color:var(--code-fg);tab-size:2}
+.copy{position:absolute;top:8px;right:8px;font-family:var(--f-mono);font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;background:var(--hivis);color:var(--on-hivis);border:0;border-radius:4px;padding:6px 10px;cursor:pointer;font-weight:600}
+.c-com{color:var(--code-dim);font-style:italic}.c-tag{color:var(--code-tag)}.c-attr{color:var(--code-attr)}.c-str{color:var(--code-str)}
+.cmd-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.cmd{display:flex;flex-direction:column;gap:8px;min-width:0}
+.cmd .codebox{border-radius:var(--radius)}
+.cmd h4{margin:0;font-size:.98rem}
+.cmd p{font-size:.9rem;color:var(--ink-2)}
+
+/* tests */
+.tests{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.test{display:flex;flex-direction:column;gap:8px}
+.test .tt{font-weight:700;line-height:1.3}
+.test .how{font-family:var(--f-mono);font-size:.76rem;color:var(--ink-2);overflow-wrap:anywhere}
+.test .res{font-size:.88rem}
+.test .res b{font-family:var(--f-mono);font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;margin-right:6px}
+.res .pass{color:var(--ok)}.res .fail{color:var(--crit)}
+
+/* checklist */
+.check-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap}
+.meter{display:flex;align-items:center;gap:10px;font-family:var(--f-mono);font-size:.8rem;color:var(--ink-2)}
+.bar{width:180px;max-width:40vw;height:10px;background:var(--rule);border-radius:999px;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--ok);transition:width .3s}
+.freq{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.freq h3{font-size:1.2rem;display:flex;align-items:center;gap:10px}
+.freq h3 span{font-family:var(--f-mono);font-size:.68rem;font-weight:600;letter-spacing:.1em;color:var(--ink-2);text-transform:uppercase}
+.ck{display:flex;flex-direction:column;gap:2px;margin-top:10px}
+.ck label{display:grid;grid-template-columns:22px minmax(0,1fr);gap:10px;padding:8px 6px;border-radius:4px;cursor:pointer;font-size:.93rem}
+.ck label:hover{background:var(--paper)}
+.ck input{width:18px;height:18px;margin:3px 0 0;accent-color:var(--ok)}
+.ck small{display:block;font-family:var(--f-mono);font-size:.74rem;color:var(--ink-2);overflow-wrap:anywhere}
+.ck input:checked + span{color:var(--ink-2);text-decoration:line-through;text-decoration-color:var(--ok)}
+.reset{font-family:var(--f-mono);font-size:.74rem;background:none;border:1px solid var(--rule);color:var(--ink-2);border-radius:4px;padding:6px 10px;cursor:pointer}
+
+/* timeline */
+.timeline{position:relative;display:flex;flex-direction:column;gap:0;padding-left:28px}
+.timeline::before{content:"";position:absolute;left:8px;top:6px;bottom:6px;width:2px;background:var(--rule)}
+.ev{position:relative;padding:0 0 22px}
+.ev::before{content:"";position:absolute;left:-26px;top:5px;width:14px;height:14px;border-radius:50%;background:var(--sheet);border:3px solid var(--blue)}
+.ev.bad::before{border-color:var(--crit);background:var(--crit-soft)}
+.ev.good::before{border-color:var(--ok);background:var(--ok-soft)}
+.ev .t{font-family:var(--f-mono);font-size:.78rem;color:var(--ink-2)}
+.ev .w{font-weight:700}
+.ev p{color:var(--ink-2);font-size:.93rem;max-width:72ch}
+.lesson{margin-top:4px;font-size:.88rem;color:var(--ink)}
+.lesson b{font-family:var(--f-mono);font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--warn);margin-right:6px}
+
+footer{margin-top:72px;padding-top:20px;border-top:1px solid var(--rule);display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-family:var(--f-mono);font-size:.75rem;color:var(--ink-2)}
+
+@media (max-width:900px){
+  .hero{grid-template-columns:minmax(0,1fr);gap:24px;padding-top:32px}
+  .scores{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .fixes,.cmd-grid,.freq{grid-template-columns:minmax(0,1fr)}
+  .tests{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .layer{grid-template-columns:minmax(0,1fr) auto}
+  .layer p{grid-column:1/-1;grid-row:2}
+}
+@media (max-width:560px){
+  .tests{grid-template-columns:minmax(0,1fr)}
+  .card{padding:16px}
+}
+
+/* ---- merged case file additions ---- */
+.scores{grid-template-columns:repeat(3,minmax(0,1fr))}
+.score .single{color:var(--ok)}
+.ph{display:inline-flex;align-items:center;gap:6px;font-family:var(--f-mono);font-size:.68rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding:2px 8px;border-radius:4px;white-space:nowrap}
+.ph1{background:var(--blue-soft);color:var(--blue)}
+.ph2{background:var(--hivis);color:var(--on-hivis)}
+.author-line{font-family:var(--f-mono);font-size:.78rem;color:var(--ink-2)}
+.author-line b{color:var(--ink)}
+
+/* phases */
+.phases{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;counter-reset:ph}
+.phase{display:flex;flex-direction:column;gap:10px;position:relative}
+.phase .when{font-family:var(--f-mono);font-size:.74rem;color:var(--ink-2)}
+.phase ul{margin:0;padding-left:1.1em;display:flex;flex-direction:column;gap:4px;font-size:.93rem}
+.phase.incident{border-color:var(--crit)}
+.phase .tag{align-self:flex-start}
+
+/* port board */
+.board-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.toggle{display:inline-flex;border:1px solid var(--rule);border-radius:999px;padding:3px;background:var(--paper)}
+.toggle button{font-family:var(--f-mono);font-size:.76rem;letter-spacing:.06em;text-transform:uppercase;border:0;background:none;color:var(--ink-2);padding:7px 14px;border-radius:999px;cursor:pointer}
+.toggle button[aria-pressed="true"]{background:var(--ink);color:var(--sheet)}
+.lanes{display:grid;grid-template-columns:200px minmax(0,1fr) 160px;gap:6px 16px;font-family:var(--f-mono);font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2);padding:0 4px}
+.lanes .mid{display:flex;justify-content:space-between}
+.row{display:grid;grid-template-columns:200px minmax(0,1fr) 160px;gap:16px;align-items:center;padding:10px 4px;border-top:1px solid var(--rule)}
+.svc{display:flex;flex-direction:column;line-height:1.25;min-width:0}
+.svc b{font-family:var(--f-mono);font-size:.95rem}
+.svc span{font-size:.82rem;color:var(--ink-2)}
+.track{position:relative;height:22px}
+.track::before{content:"";position:absolute;left:0;right:0;top:10px;height:2px;background:repeating-linear-gradient(90deg,var(--rule) 0 6px,transparent 6px 10px)}
+.gate{position:absolute;top:0;width:6px;height:22px;margin-left:-3px;border-radius:2px;background:var(--crit)}
+.gate.open{background:transparent;border:2px dashed var(--ok)}
+.endpoint{position:absolute;right:0;top:3px;width:16px;height:16px;border-radius:3px;background:var(--ink)}
+.pkt{position:absolute;top:5px;left:0;width:12px;height:12px;margin-left:-6px;border-radius:50%;background:var(--ink-2);animation:travel 1.1s cubic-bezier(.3,.7,.4,1) both}
+.pkt.bad{background:var(--crit);box-shadow:0 0 0 4px var(--crit-soft)}
+.pkt.ok{background:var(--ok);box-shadow:0 0 0 4px var(--ok-soft)}
+@keyframes travel{from{left:0}to{left:var(--stop)}}
+@media (prefers-reduced-motion:reduce){.pkt{animation:none;left:var(--stop)}}
+.pill.pub{background:var(--ok-soft);color:var(--ok)}
+.pill.crit{background:var(--crit-soft);color:var(--crit)}
+.pill.warn{background:var(--warn-soft);color:var(--warn)}
+.pill.good{background:var(--blue-soft);color:var(--blue)}
+.legend{display:flex;gap:18px;flex-wrap:wrap;font-size:.82rem;color:var(--ink-2)}
+.legend i{display:inline-block;width:10px;height:16px;border-radius:2px;margin-right:6px;vertical-align:-3px;background:var(--crit)}
+.legend i.o{background:transparent;border:2px dashed var(--ok)}
+
+/* layer controls */
+.ltabs{display:flex;gap:6px;flex-wrap:wrap}
+.ltabs button{font-family:var(--f-body);font-weight:600;font-size:.92rem;display:inline-flex;align-items:center;gap:8px;padding:9px 14px;border:1px solid var(--rule);border-radius:var(--radius);background:var(--sheet);color:var(--ink);cursor:pointer}
+.ltabs button em{font-style:normal;font-family:var(--f-mono);font-size:.72rem;background:var(--paper);color:var(--ink-2);padding:1px 7px;border-radius:999px}
+.ltabs button[aria-selected="true"]{background:var(--ink);color:var(--sheet);border-color:var(--ink)}
+.ltabs button[aria-selected="true"] em{background:var(--hivis);color:var(--on-hivis)}
+.tasks{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;border:1px solid var(--rule);border-radius:var(--radius);background:var(--sheet);overflow:hidden}
+.task{border-bottom:1px solid var(--rule)}
+.task:last-child{border-bottom:0}
+.task > button{width:100%;display:grid;grid-template-columns:22px minmax(0,1fr) auto 20px;gap:14px;align-items:center;text-align:left;padding:14px 18px;background:none;border:0;color:var(--ink);cursor:pointer;font:inherit}
+.task > button:hover{background:var(--paper)}
+.tick{width:20px;height:20px}
+.tick circle{fill:var(--ok-soft);stroke:var(--ok);stroke-width:1.5}
+.tick path{fill:none;stroke:var(--ok);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.task .t{display:flex;flex-direction:column;gap:2px;min-width:0}
+.task .t strong{font-weight:700;line-height:1.3}
+.task .t span{font-size:.86rem;color:var(--ink-2)}
+.chev{font-family:var(--f-mono);font-size:1.1rem;color:var(--ink-2);transition:transform .2s}
+.task[data-open="true"] .chev{transform:rotate(45deg)}
+.detail{padding:0 18px 18px 54px;display:flex;flex-direction:column;gap:10px;font-size:.93rem}
+.detail pre{background:var(--code-bg);border-radius:var(--radius)}
+
+/* roles */
+.roles{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+.rtabs{display:flex;gap:6px;flex-wrap:wrap}
+.rtabs button{display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:10px 12px;border:1px solid var(--rule);border-radius:var(--radius);background:var(--sheet);color:var(--ink);cursor:pointer;font:inherit;font-weight:600;font-size:.86rem}
+.rtabs button[aria-pressed="true"]{border-color:var(--ink);box-shadow:inset 0 -3px 0 var(--hivis)}
+.lvl{display:flex;gap:2px}.lvl i{width:8px;height:8px;border-radius:2px;background:var(--rule)}.lvl i.on{background:var(--blue)}
+.caps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.caps li{display:grid;grid-template-columns:20px minmax(0,1fr);gap:10px;font-size:.92rem;align-items:start}
+.caps li.no{color:var(--ink-2)}
+.caps .mk{font-family:var(--f-mono);font-weight:700}
+.caps li.yes .mk{color:var(--ok)}.caps li.no .mk{color:var(--crit)}
+.meter2{height:8px;background:var(--rule);border-radius:999px;overflow:hidden}
+.meter2 i{display:block;height:100%;background:var(--blue);transition:width .3s}
+.meter2 i.max{background:var(--crit)}
+.two-acc{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.kv{display:grid;grid-template-columns:90px minmax(0,1fr);gap:6px 12px;font-size:.92rem;margin:0}
+.kv dt{font-family:var(--f-mono);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2);padding-top:3px}
+.kv dd{margin:0}
+
+/* incident */
+.specimen{display:flex;flex-direction:column;gap:12px}
+.page-mock{background:var(--paper);border:1px solid var(--rule);border-radius:var(--radius);padding:14px 16px}
+.page-mock small{font-family:var(--f-mono);font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2)}
+.page-mock p{margin-top:4px;font-family:Georgia,"Times New Roman",serif;font-size:1.02rem}
+.inj{background:var(--crit-soft);color:var(--crit);border-radius:3px;padding:0 2px;text-decoration:underline wavy var(--crit)}
+.specimen[data-state="clean"] .inj{display:none}
+.finds{display:flex;flex-direction:column;border:1px solid var(--rule);border-radius:var(--radius);overflow:hidden;background:var(--sheet)}
+.find{display:grid;grid-template-columns:90px minmax(0,1fr) auto;gap:14px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--rule);font-size:.93rem}
+.find:last-child{border-bottom:0}
+.find b{font-family:var(--f-mono);font-size:.8rem}
+.steps{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;counter-reset:st}
+.steps li{counter-increment:st;display:flex;flex-direction:column;gap:6px;background:var(--sheet);border:1px solid var(--rule);border-radius:var(--radius);padding:16px}
+.steps li::before{content:counter(st,decimal-leading-zero);font-family:var(--f-display);font-weight:900;font-size:1.6rem;color:var(--hivis);-webkit-text-stroke:1px var(--ink);line-height:1}
+.steps strong{font-size:1rem}
+.steps p{font-size:.88rem;color:var(--ink-2)}
+.checks12{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.c12{background:var(--sheet);border:1px solid var(--rule);border-radius:var(--radius);padding:12px 14px;display:flex;flex-direction:column;gap:4px}
+.c12 strong{font-size:.92rem;line-height:1.3}
+.c12 span{font-size:.82rem;color:var(--ink-2)}
+.c12 em{font-style:normal;font-family:var(--f-mono);font-size:.68rem;color:var(--blue)}
+.takeaways{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+.take{border-top:4px solid var(--hivis);padding-top:10px;display:flex;flex-direction:column;gap:6px}
+.take strong{font-family:var(--f-display);font-weight:800;font-size:1.15rem;text-transform:uppercase;line-height:1.05}
+.take p{font-size:.88rem;color:var(--ink-2)}
+
+/* command groups */
+.cgroups{display:flex;gap:6px;flex-wrap:wrap}
+.cgroups button{font-family:var(--f-mono);font-size:.76rem;letter-spacing:.04em;padding:8px 13px;border:1px solid var(--rule);border-radius:999px;background:var(--sheet);color:var(--ink-2);cursor:pointer}
+.cgroups button[aria-pressed="true"]{background:var(--ink);color:var(--sheet);border-color:var(--ink)}
+.cmd.wide{grid-column:1/-1}
+.cmd .sh{font-family:var(--f-mono);font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--blue)}
+.c-cm{color:var(--code-dim);font-style:italic}
+
+/* roadmap */
+.road{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.rd{display:flex;flex-direction:column;gap:8px}
+.rd .top{display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap}
+.rd .pr{font-family:var(--f-mono);font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2)}
+.rd p{font-size:.9rem;color:var(--ink-2)}
+
+/* author */
+.author{display:grid;grid-template-columns:72px minmax(0,1fr);gap:18px;align-items:center}
+.mono-av{width:72px;height:72px;border-radius:50%;background:var(--ink);color:var(--hivis);display:grid;place-items:center;font-family:var(--f-display);font-weight:900;font-size:1.7rem;letter-spacing:.04em}
+.author p{color:var(--ink-2);max-width:70ch}
+
+@media (max-width:900px){
+  .scores{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .phases,.roles,.two-acc,.road{grid-template-columns:minmax(0,1fr)}
+  .steps{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .checks12{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .takeaways{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .lanes,.row{grid-template-columns:120px minmax(0,1fr) 120px;gap:10px}
+}
+@media (max-width:560px){
+  .lanes{display:none}
+  .row{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"svc pill" "track track";gap:8px}
+  .row .svc{grid-area:svc}.row .track{grid-area:track}.row .pill{grid-area:pill}
+  .steps,.checks12,.takeaways{grid-template-columns:minmax(0,1fr)}
+  .find{grid-template-columns:minmax(0,1fr)}
+  .detail{padding-left:18px}
+  .task > button{grid-template-columns:22px minmax(0,1fr) 20px}
+  .task > button .ph{display:none}
+}
+</style>
+</head>
+<body>
+
+<div class="tape" aria-hidden="true"></div>
+<nav class="toc" aria-label="Sections"><div class="inner">
+  <a href="#summary">Summary</a><a href="#phases">Phases</a><a href="#architecture">Architecture</a><a href="#exposure">Exposure</a><a href="#controls">Controls</a><a href="#register">Review</a><a href="#tests">Tests</a><a href="#access">Access</a><a href="#incident">Incident</a><a href="#configs">web.config</a><a href="#commands">Commands</a><a href="#checklist">Checklist</a><a href="#lessons">Lessons</a><a href="#roadmap">Roadmap</a>
+</div></nav>
+
+<div class="wrap">
+
+<header class="hero" id="summary">
+  <div class="stack">
+    <span class="eyebrow">Case file · WordPress on Windows Server and IIS · 2026</span>
+    <h1>Inspected.<br>Defects found.<br><span class="mark">Rectified.</span></h1>
+    <p class="lede">A company website migrated from WordPress on Linux to WordPress on Windows Server 2025, hosted on a VMware cloud platform. It was hardened in two passes: layer by layer before cut-over, then an attacker's-eye review after launch. Every control, test, command and config is recorded here so the work can be repeated and checked.</p>
+    <div class="meta"><span>Stack <b>IIS 10 · PHP 8.5 · MySQL 8.0 · WordPress</b></span><span>Hosting <b>VMware Cloud Director · NSX edge</b></span><span>Method <b>Layered hardening · passive external testing</b></span></div>
+    <p class="author-line">Prepared by <b>Arif Jaffery</b>, Tech Lead</p>
+  </div>
+  <figure class="plan" style="margin:0" aria-label="Blueprint of a house being scanned, stamped rectified">
+    <svg viewBox="0 0 420 300" role="img" aria-hidden="true">
+      <defs><pattern id="g" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0H0V20" fill="none" stroke="var(--grid)" stroke-width="1"/></pattern></defs>
+      <rect width="420" height="300" fill="url(#g)"/>
+      <g fill="none" stroke="var(--blue)" stroke-width="2.2" stroke-linejoin="round">
+        <path d="M70 140 L210 50 L350 140"/>
+        <rect x="95" y="135" width="230" height="135"/>
+        <rect x="125" y="165" width="50" height="40"/><path d="M150 165v40M125 185h50"/>
+        <rect x="245" y="165" width="50" height="40"/><path d="M270 165v40M245 185h50"/>
+        <rect x="188" y="205" width="44" height="65"/>
+        <rect x="285" y="70" width="22" height="45"/>
+      </g>
+      <g stroke="var(--blue)" stroke-width="1" fill="none" opacity=".7">
+        <path d="M95 284h230M95 280v8M325 280v8"/><path d="M362 135v135M358 135h8M358 270h8"/>
+      </g>
+      <text x="210" y="297" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" fill="var(--blue)">SITE · /wordpress</text>
+      <g transform="translate(193 210)">
+        <path d="M17 0 L34 6 V22 C34 34 26 42 17 46 C8 42 0 34 0 22 V6 Z" fill="var(--hivis)" stroke="var(--ink)" stroke-width="2"/>
+        <path d="M10 23 L15 29 L25 16" fill="none" stroke="var(--ink)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+      </g>
+      <g class="scan"><rect x="60" y="48" width="300" height="3" fill="var(--hivis)"/><rect x="60" y="51" width="300" height="20" fill="var(--hivis)" opacity=".12"/></g>
+    </svg>
+    <div class="stamp">RECTIFIED</div>
+  </figure>
+</header>
+
+<div class="scores">
+  <div class="score"><span class="k">Security headers grade</span><span class="v"><span class="from">F</span><span class="arrow">→</span><span class="to">A</span></span></div>
+  <div class="score"><span class="k">Ports reachable from internet</span><span class="v"><span class="from">3</span><span class="arrow">→</span><span class="to">2</span></span></div>
+  <div class="score"><span class="k">Inbound host rules disabled</span><span class="v"><span class="single">32</span></span></div>
+  <div class="score"><span class="k">WordPress core</span><span class="v"><span class="from">7.0.2</span><span class="arrow">→</span><span class="to">7.1.3</span></span></div>
+  <div class="score"><span class="k">Usernames exposed</span><span class="v"><span class="from">3</span><span class="arrow">→</span><span class="to">0</span></span></div>
+  <div class="score"><span class="k">Public DB console</span><span class="v"><span class="from">Yes</span><span class="arrow">→</span><span class="to">No</span></span></div>
+</div>
+
+<!-- PHASES -->
+<section class="block" id="phases">
+  <div class="head"><span class="eyebrow">How the work ran, in order</span><h2>Project phases</h2></div>
+  <div class="phases">
+    <article class="card phase"><span class="ph ph1 tag">Phase 1</span><h3>Pre-cutover hardening</h3><span class="when">New Windows environment, before go-live</span>
+      <ul><li>Edge gateway: closed internet-facing RDP</li><li>Windows: 32 inbound rules off, lockout policy, services trimmed</li><li>IIS: file blocking, headers, rate limiting in log mode</li><li>WordPress and MySQL: config, permissions, least privilege</li><li>Access: Editor role for content staff</li></ul></article>
+    <article class="card phase incident"><span class="pill crit tag">Incident</span><h3>Injected links in a backup</h3><span class="when">Found while restoring the old site's content</span>
+      <ul><li>Spam links present inside the backup itself</li><li>Twelve read-only SQL checks across the database</li><li>Five injected links on three pages identified</li><li>Pattern search found domains a blocklist missed</li></ul></article>
+    <article class="card phase"><span class="ph ph2 tag">Phase 2</span><h3>Post-launch external review</h3><span class="when">Same-day review and fixes on the live site</span>
+      <ul><li>User enumeration blocked in IIS</li><li>phpMyAdmin moved to a loopback-only site</li><li>Core updated to the current security release</li><li>HTTPS redirect, HSTS and Permissions-Policy</li><li>Headers grade F → A</li></ul></article>
+  </div>
+</section>
+
+<!-- ARCHITECTURE -->
+<section class="block" id="architecture">
+  <div class="head"><span class="eyebrow">Where each control lives</span><h2>Architecture</h2>
+  <p class="lede">Every request passes two firewalls before IIS sees it. Each fix sits at the layer that can enforce it reliably: the edge and host for ports, IIS for paths and headers, WordPress and MySQL for accounts.</p></div>
+  <div class="card diagram">
+    <svg viewBox="0 0 900 380" role="img" aria-label="Request flow from the internet through the edge gateway, Windows Firewall, IIS, the WordPress application, PHP and MySQL, with phpMyAdmin bound to localhost only">
+      <defs>
+        <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" class="dg-arrowfill"/></marker>
+        <marker id="arok" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" class="dg-okfill"/></marker>
+      </defs>
+      <rect x="245" y="20" width="640" height="340" rx="8" class="dg-zone"/>
+      <text x="261" y="40" class="dg-z">WINDOWS SERVER 2025 VM</text>
+      <rect x="15" y="70" width="110" height="70" rx="6" class="dg-box"/>
+      <text x="70" y="100" text-anchor="middle" class="dg-t">Internet</text>
+      <text x="70" y="118" text-anchor="middle" class="dg-s">visitors · bots</text>
+      <rect x="148" y="60" width="78" height="90" rx="6" class="dg-hv" stroke="var(--ink)" stroke-width="1.5"/>
+      <text x="187" y="92" text-anchor="middle" class="dg-t" style="fill:var(--on-hivis)">NSX edge</text>
+      <text x="187" y="108" text-anchor="middle" class="dg-t" style="fill:var(--on-hivis)">gateway</text>
+      <text x="187" y="130" text-anchor="middle" class="dg-s" style="fill:var(--on-hivis)">80 · 443</text>
+      <path d="M125 105 H146" class="dg-line" marker-end="url(#ar)"/>
+      <rect x="258" y="60" width="92" height="90" rx="6" class="dg-hv" stroke="var(--ink)" stroke-width="1.5"/>
+      <text x="304" y="92" text-anchor="middle" class="dg-t" style="fill:var(--on-hivis)">Windows</text>
+      <text x="304" y="108" text-anchor="middle" class="dg-t" style="fill:var(--on-hivis)">Firewall</text>
+      <text x="304" y="130" text-anchor="middle" class="dg-s" style="fill:var(--on-hivis)">default block</text>
+      <path d="M226 105 H256" class="dg-line" marker-end="url(#ar)"/>
+      <rect x="370" y="60" width="170" height="90" rx="6" class="dg-box"/>
+      <text x="455" y="86" text-anchor="middle" class="dg-t">IIS · Default Web Site</text>
+      <text x="455" y="106" text-anchor="middle" class="dg-s">root web.config</text>
+      <text x="455" y="122" text-anchor="middle" class="dg-s">PHP handler · / → /wordpress/</text>
+      <path d="M350 105 H368" class="dg-line" marker-end="url(#ar)"/>
+      <rect x="560" y="50" width="170" height="110" rx="6" class="dg-box" style="stroke:var(--ok);stroke-width:2.2"/>
+      <text x="645" y="76" text-anchor="middle" class="dg-t">/wordpress application</text>
+      <text x="645" y="96" text-anchor="middle" class="dg-s">wordpress web.config</text>
+      <text x="645" y="112" text-anchor="middle" class="dg-s">HTTPS · user-list blocks</text>
+      <text x="645" y="128" text-anchor="middle" class="dg-s">headers · HSTS</text>
+      <text x="645" y="144" text-anchor="middle" class="dg-s">no kernel cache</text>
+      <path d="M540 105 H558" class="dg-ok" marker-end="url(#arok)"/>
+      <rect x="750" y="60" width="122" height="90" rx="6" class="dg-box"/>
+      <text x="811" y="90" text-anchor="middle" class="dg-t">WordPress 7.1.3</text>
+      <text x="811" y="108" text-anchor="middle" class="dg-s">PHP 8.5 FastCGI</text>
+      <text x="811" y="124" text-anchor="middle" class="dg-s">expose_php Off</text>
+      <path d="M730 105 H748" class="dg-line" marker-end="url(#ar)"/>
+      <rect x="750" y="230" width="122" height="80" rx="6" class="dg-box"/>
+      <text x="811" y="262" text-anchor="middle" class="dg-t">MySQL 8.0</text>
+      <text x="811" y="280" text-anchor="middle" class="dg-s">127.0.0.1 only</text>
+      <path d="M811 150 V228" class="dg-line" marker-end="url(#ar)"/>
+      <rect x="560" y="230" width="170" height="80" rx="6" class="dg-box" style="stroke:var(--ok);stroke-width:2.2"/>
+      <text x="645" y="258" text-anchor="middle" class="dg-t">phpMyAdmin-private</text>
+      <text x="645" y="276" text-anchor="middle" class="dg-s">bound to 127.0.0.1:8080</text>
+      <text x="645" y="292" text-anchor="middle" class="dg-s">reachable from the VM only</text>
+      <path d="M730 270 H748" class="dg-line" marker-end="url(#ar)"/>
+      <rect x="370" y="230" width="170" height="80" rx="6" class="dg-box"/>
+      <text x="455" y="258" text-anchor="middle" class="dg-t">Admin on VM console</text>
+      <text x="455" y="276" text-anchor="middle" class="dg-s">Cloud Director web console</text>
+      <text x="455" y="292" text-anchor="middle" class="dg-s">no RDP port open</text>
+      <path d="M540 270 H558" class="dg-ok" marker-end="url(#arok)"/>
+      <path d="M70 140 V340 H645 V312" class="dg-block"/>
+      <g transform="translate(645 326)"><path d="M-8 -8 L8 8 M8 -8 L-8 8" class="dg-x"/></g>
+      <text x="86" y="332" class="dg-crit">/phpmyadmin, RDP, SSH, WinRM, MySQL from the internet → blocked</text>
+    </svg>
+  </div>
+</section>
+
+<!-- EXPOSURE -->
+<section class="block" id="exposure">
+  <div class="head"><span class="eyebrow">Phase 1 · what an outside connection meets</span><h2>Port exposure</h2>
+  <p class="lede">Each inbound connection must pass the edge gateway, then Windows Firewall. Before hardening, Remote Desktop passed both, and most admin ports were stopped by the edge alone. Switch states to compare.</p></div>
+  <div class="card" style="display:flex;flex-direction:column;gap:14px">
+    <div class="board-head"><h3 id="board-title">After hardening</h3>
+      <div class="toggle" role="group" aria-label="Show state"><button type="button" id="btn-before" aria-pressed="false">Before</button><button type="button" id="btn-after" aria-pressed="true">After</button></div></div>
+    <div>
+      <div class="lanes"><span>Port / service</span><span class="mid"><span>Internet</span><span>Edge</span><span>Host FW</span><span>Server</span></span><span>Result</span></div>
+      <div id="rows"></div>
+    </div>
+    <div class="legend"><span><i></i>Gate closed</span><span><i class="o"></i>Gate open</span><span>The dot shows where a connection attempt ends.</span></div>
+    <p class="note">phpMyAdmin (Phase 2) listens on 127.0.0.1:8080 only, so it stays unreachable even if a firewall rule is changed by mistake.</p>
+  </div>
+</section>
+
+<!-- CONTROLS -->
+<section class="block" id="controls">
+  <div class="head"><span class="eyebrow">33 controls across five layers</span><h2>Controls by layer</h2>
+  <p class="lede">Each control lists what changed, why it matters, and the command behind it where there is one. Tags show which phase applied it. Select a layer, then open any item.</p></div>
+  <div class="ltabs" id="ltabs" role="tablist" aria-label="Layers"></div>
+  <p class="lede" id="layer-intro"></p>
+  <ul class="tasks" id="tasks"></ul>
+</section>
+
+<!-- REGISTER -->
+<section class="block" id="register">
+  <div class="head"><span class="eyebrow">Phase 2 · findings in inspection-report form</span><h2>Defect register</h2>
+  <p class="lede">Severity follows how much an attacker gains and how easily. Open items carry into the roadmap.</p></div>
+  <div class="tablebox"><table>
+    <thead><tr><th>Ref</th><th>Defect</th><th>Risk</th><th>Severity</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td class="ref">D-01</td><td>phpMyAdmin login page reachable from the internet over HTTP and HTTPS</td><td>Direct path to the database; password guessing</td><td><span class="pill p-crit">Critical</span></td><td><span class="pill p-ok">Rectified</span></td></tr>
+      <tr><td class="ref">D-02</td><td>All user accounts listed by the REST API (<code>/wp-json/wp/v2/users</code>), author archives and <code>?author=N</code></td><td>Attackers learn valid login names</td><td><span class="pill p-major">Major</span></td><td><span class="pill p-ok">Rectified</span></td></tr>
+      <tr><td class="ref">D-03</td><td>WordPress core two security releases behind</td><td>Published flaws, including XSS and SQL injection</td><td><span class="pill p-major">Major</span></td><td><span class="pill p-ok">Rectified</span></td></tr>
+      <tr><td class="ref">D-04</td><td>Slider plugin on a version with known authenticated file-read flaws</td><td>A low-privilege login could read <code>wp-config.php</code></td><td><span class="pill p-major">Major</span></td><td><span class="pill p-open">Open</span></td></tr>
+      <tr><td class="ref">D-05</td><td>Login page has no two-factor, lockout or CAPTCHA; default <code>admin</code> account exists</td><td>Brute-force and credential-stuffing attacks</td><td><span class="pill p-major">Major</span></td><td><span class="pill p-open">Open</span></td></tr>
+      <tr><td class="ref">D-06</td><td>HSTS and Permissions-Policy missing; HTTPS redirect not yet active</td><td>Downgrade and browser-feature abuse</td><td><span class="pill p-minor">Minor</span></td><td><span class="pill p-ok">Rectified</span></td></tr>
+      <tr><td class="ref">D-07</td><td>PHP version sent in the <code>X-Powered-By</code> header</td><td>Helps attackers pick matching exploits</td><td><span class="pill p-minor">Minor</span></td><td><span class="pill p-ok">Rectified</span></td></tr>
+      <tr><td class="ref">D-08</td><td><code>readme.html</code> publicly readable</td><td>Confirms WordPress and helps fingerprinting</td><td><span class="pill p-minor">Minor</span></td><td><span class="pill p-ok">Rectified</span></td></tr>
+      <tr><td class="ref">D-09</td><td>Menu link and share image point to the server's raw IP over plain HTTP</td><td>Unencrypted traffic; reveals the server address</td><td><span class="pill p-minor">Minor</span></td><td><span class="pill p-open">Open</span></td></tr>
+      <tr><td class="ref">D-10</td><td>WordPress version shown in the RSS feed; "admin" shown as post author</td><td>Fingerprinting and a known username</td><td><span class="pill p-minor">Minor</span></td><td><span class="pill p-open">Open</span></td></tr>
+      <tr><td class="ref">D-11</td><td>No off-server backups yet; TLS 1.0 and 1.1 status not confirmed</td><td>Slow recovery after an incident; weak ciphers</td><td><span class="pill p-unk">Unknown</span></td><td><span class="pill p-unk">Unverified</span></td></tr>
+      <tr><td class="ref">OK</td><td>RDP, SSH, WinRM and MySQL closed at two layers (Phase 1); <code>xmlrpc.php</code>, <code>wp-config.php</code>, <code>debug.log</code> blocked; uploads not listable</td><td>Already in place from Phase 1</td><td><span class="pill p-minor">Info</span></td><td><span class="pill p-ok">Pass</span></td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- TESTS -->
+<section class="block" id="tests">
+  <div class="head"><span class="eyebrow">How the site was tested</span><h2>Security tests applied</h2>
+  <p class="lede">All external tests were passive: ordinary requests any visitor or scanner can make, with no login attempts or exploitation. Each ran before and after the fixes, and again from a phone on mobile data so the results reflect what the internet sees.</p></div>
+  <div class="tests">
+    <div class="card test"><span class="tt">Port reachability audit</span><span class="how">Edge firewall + DNAT rules reviewed as pairs · Get-NetFirewallRule</span><span class="res"><b class="pass">Result</b>RDP open at both layers before; only 80 and 443 reachable after.</span></div>
+    <div class="card test"><span class="tt">Security-header scan</span><span class="how">securityheaders.com → https://www.example.com/wordpress/</span><span class="res"><b class="pass">Result</b>Grade F before, A after. PHP version hidden; IIS name still shown (low risk).</span></div>
+    <div class="card test"><span class="tt">User enumeration via REST API</span><span class="how">GET /wordpress/wp-json/wp/v2/users<br>GET /wordpress/?rest_route=/wp/v2/users</span><span class="res"><b class="pass">Result</b>Listed 3 accounts before; 404 for logged-out visitors after.</span></div>
+    <div class="card test"><span class="tt">User enumeration via author pages</span><span class="how">GET /wordpress/?author=1, 2, 3…<br>GET /wordpress/author/&lt;name&gt;/</span><span class="res"><b class="pass">Result</b>Showed usernames before; redirects to the home page after.</span></div>
+    <div class="card test"><span class="tt">Database console exposure</span><span class="how">GET /phpmyadmin/ over HTTP and HTTPS, mixed-case variants</span><span class="res"><b class="pass">Result</b>Login page before; Not Found after. Only reachable at 127.0.0.1:8080 on the VM.</span></div>
+    <div class="card test"><span class="tt">Version fingerprinting</span><span class="how">RSS feed generator tag · page generator meta tags · readme.html</span><span class="res"><b class="pass">Result</b>Identified core and plugin versions, then cross-checked them against vulnerability databases.</span></div>
+    <div class="card test"><span class="tt">Known-vulnerability lookup</span><span class="how">Wordfence Threat Intel · WPScan · release notes</span><span class="res"><b class="fail">Open</b>Core now current; slider plugin still matches published CVEs.</span></div>
+    <div class="card test"><span class="tt">Sensitive file exposure</span><span class="how">readme.html · xmlrpc.php · wp-config.php · debug.log · /wp-content/uploads/</span><span class="res"><b class="pass">Result</b>All blocked or not listable.</span></div>
+    <div class="card test"><span class="tt">Login page hardening</span><span class="how">GET /wordpress/wp-login.php · look for CAPTCHA, 2FA, lockout</span><span class="res"><b class="fail">Open</b>Reachable with a plain form. Search engines are told not to index it.</span></div>
+    <div class="card test"><span class="tt">HTTP to HTTPS behaviour</span><span class="how">GET http://www.example.com/wordpress/ · check HSTS header</span><span class="res"><b class="pass">Result</b>Redirects to HTTPS; browsers then force HTTPS for a year.</span></div>
+    <div class="card test"><span class="tt">Cache-bypass re-test</span><span class="how">Same URL with ?v=&lt;time&gt; appended, and changed letter case</span><span class="res"><b class="pass">Result</b>Separated stale cached copies from live behaviour; exposed the IIS kernel-cache issue.</span></div>
+    <div class="card test"><span class="tt">Server-side config proof</span><span class="how">PowerShell: Get-WebConfigFile · Get-WebConfiguration</span><span class="res"><b class="pass">Result</b>Confirmed which web.config IIS loads and that every rule is active.</span></div>
+  </div>
+</section>
+
+<!-- ACCESS -->
+<section class="block" id="access">
+  <div class="head"><span class="eyebrow">Least privilege at every layer</span><h2>Access control</h2>
+  <p class="lede">Content staff need to work on the site, not the server. Access is granted at separate layers and each is held to the least it needs: a WordPress role for each person, a restricted MySQL account for the application, a loopback-only database console, and an admin portal behind several defences.</p></div>
+
+  <div class="two-acc">
+    <div class="card"><h3>WordPress user</h3><dl class="kv" style="margin-top:12px"><dt>Who</dt><dd>A person, one account each</dd><dt>Stored</dt><dd>Rows in <code>wp_users</code> and <code>wp_usermeta</code></dd><dt>Limit</dt><dd>The role, Subscriber up to Administrator</dd><dt>Signs in</dt><dd>To the website only, never to MySQL</dd></dl></div>
+    <div class="card"><h3>MySQL user</h3><dl class="kv" style="margin-top:12px"><dt>Who</dt><dd>The WordPress application, one account per site</dd><dt>Stored</dt><dd>MySQL's system tables; named in <code>wp-config.php</code></dd><dt>Limit</dt><dd>Privileges on one database only</dd><dt>Signs in</dt><dd>To MySQL only, never to the website</dd></dl></div>
+  </div>
+
+  <div class="card" style="display:flex;flex-direction:column;gap:16px">
+    <div class="head"><h3>How the content role was sized</h3><p class="lede">Started at the lowest role and raised one step at a time until staff could open the theme's builder pages. Editor is the first role that can, and it still cannot touch plugins, themes, users or settings.</p></div>
+    <div class="rtabs" id="rtabs" role="group" aria-label="WordPress roles"></div>
+    <div class="roles">
+      <div style="display:flex;flex-direction:column;gap:10px;min-width:0">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><h3 id="role-name">Editor</h3><span class="pill" id="role-badge"></span></div>
+        <div class="meter2" aria-hidden="true"><i id="role-meter"></i></div>
+        <p id="role-note" style="color:var(--ink-2)"></p>
+        <div class="codebox" style="border-radius:var(--radius)"><div class="path">wp_usermeta for this role</div><pre id="role-meta"></pre></div>
+      </div>
+      <ul class="caps" id="caps"></ul>
+    </div>
+  </div>
+
+  <div class="head" style="margin-top:12px"><h3>WordPress admin portal</h3></div>
+  <div class="layers">
+    <div class="layer"><span class="lv">Hide names</span><p>User list, author pages and <code>?author=N</code> blocked in IIS, with a WordPress snippet as a second layer.</p><span class="pill p-ok">In place</span></div>
+    <div class="layer"><span class="lv">Encrypt</span><p>All traffic redirected to HTTPS with HSTS for one year, so passwords never travel in plain text.</p><span class="pill p-ok">In place</span></div>
+    <div class="layer"><span class="lv">Side doors</span><p><code>xmlrpc.php</code> blocked; dashboard file editor disabled with <code>DISALLOW_FILE_EDIT</code>; login page marked noindex.</p><span class="pill p-ok">In place</span></div>
+    <div class="layer"><span class="lv">Roles</span><p>Content staff hold Editor. Administrator is kept for named admins only.</p><span class="pill p-ok">In place</span></div>
+    <div class="layer"><span class="lv">Two-factor</span><p>Wordfence (free) → Login Security → enable 2FA for every administrator.</p><span class="pill p-open">To do</span></div>
+    <div class="layer"><span class="lv">Lockout</span><p>Wordfence → Brute Force Protection: lock out after a few failed attempts; reCAPTCHA on the login form.</p><span class="pill p-open">To do</span></div>
+    <div class="layer"><span class="lv">Accounts</span><p>Create a named admin, delete <code>admin</code> and reassign its posts, remove accounts nobody recognises.</p><span class="pill p-open">To do</span></div>
+  </div>
+
+  <div class="head" style="margin-top:12px" id="phpmyadmin"><h3>phpMyAdmin, reachable only from the server</h3></div>
+  <div class="fixes">
+    <article class="card fix">
+      <h3>Set-up procedure</h3>
+      <ol>
+        <li>In IIS Manager, select the old phpmyadmin item under Default Web Site → <b>Explore</b> to find its folder.</li>
+        <li>Move the folder out of <code>wwwroot</code>, for example to <code>C:\inetpub\phpmyadmin</code>, and remove the old item from Default Web Site.</li>
+        <li>Copy in the phpMyAdmin <code>web.config</code> from the configs section.</li>
+        <li><b>Sites → Add Website</b>: name <code>phpMyAdmin-private</code>, type <code>http</code>, IP <code>127.0.0.1</code>, port <code>8080</code>, host name blank, Pass-through authentication.</li>
+        <li>Do not open port 8080 on the edge or host firewall.</li>
+        <li>Test on the VM: <code>http://127.0.0.1:8080/</code> shows the login. From outside: <code>/phpmyadmin/</code> returns Not Found.</li>
+      </ol>
+    </article>
+    <article class="card fix">
+      <h3>Daily use and troubleshooting</h3>
+      <p>Open the VM in the Cloud Director web console, start a browser and go to <code>http://127.0.0.1:8080/</code>. Use the IP rather than <code>localhost</code>, which Windows often resolves to IPv6 <code>::1</code>.</p>
+      <div class="tablebox" style="border:0"><table style="min-width:0">
+        <thead><tr><th>Symptom</th><th>Cause and fix</th></tr></thead>
+        <tbody>
+          <tr><td>403.14</td><td>No default document. Add <code>index.php</code> under Default Document.</td></tr>
+          <tr><td>404 on localhost only</td><td>IPv6 loopback not allowed. Use <code>127.0.0.1</code>.</td></tr>
+          <tr><td>"Binding is assigned to another site"</td><td>Port left at 80. Change it to 8080.</td></tr>
+          <tr><td>500.19</td><td>PHP handler already defined server-wide. Remove the <code>&lt;handlers&gt;</code> block.</td></tr>
+          <tr><td>401.3</td><td>Grant <code>IIS_IUSRS</code> Read &amp; execute on the folder.</td></tr>
+        </tbody>
+      </table></div>
+    </article>
+  </div>
+</section>
+
+<!-- INCIDENT -->
+<section class="block" id="incident">
+  <div class="head"><span class="eyebrow">Incident response</span><h2>Injected links in the database</h2>
+  <p class="lede">After restoring the most recent backup of the old site, the homepage showed links nobody on the team had written. The infection was inside the backup itself, so it could not be trusted as a clean restore point. It was reported as a compromise, then the database was searched directly for every affected page.</p></div>
+  <div class="scores" style="grid-template-columns:repeat(4,minmax(0,1fr))">
+    <div class="score"><span class="k">Read-only checks written</span><span class="v"><span class="single" style="color:var(--ink)">12</span></span></div>
+    <div class="score"><span class="k">Injected links found</span><span class="v"><span class="single" style="color:var(--crit)">5</span></span></div>
+    <div class="score"><span class="k">Published pages affected</span><span class="v"><span class="single" style="color:var(--crit)">3</span></span></div>
+    <div class="score"><span class="k">Missed by the first report</span><span class="v"><span class="single" style="color:var(--warn)">2</span></span></div>
+  </div>
+
+  <div class="card specimen" id="specimen" data-state="infected">
+    <div class="board-head"><h3>What an injected link looks like</h3>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span class="pill crit" id="spec-pill">2 injected links</span>
+      <div class="toggle" role="group" aria-label="Show page state"><button type="button" id="spec-bad" aria-pressed="true">Infected</button><button type="button" id="spec-ok" aria-pressed="false">Cleaned</button></div></div></div>
+    <p style="color:var(--ink-2);font-size:.93rem">The attacker drops a link into the middle of a normal sentence, using the bare address as the link text.</p>
+    <div class="page-mock"><small>About us page</small><p>The company stands as a trusted <span class="inj">http://spam-site-one.example </span>entity in the realms of real estate, construction law, and conveyancing.</p></div>
+    <div class="page-mock"><small>Services page</small><p>Our Building <span class="inj">http://spam-site-two.example </span>Inspectors are highly skilled, qualified and, where required, licensed building inspectors.</p></div>
+    <div class="codebox" style="border-radius:var(--radius)"><div class="path">Stored HTML in wp_posts.post_content</div><pre>&lt;p&gt;Our Building <span class="inj">&lt;a href="http://spam-site-two.example"&gt;http://spam-site-two.example&lt;/a&gt; </span>Inspectors are highly skilled, ...&lt;/p&gt;</pre></div>
+  </div>
+
+  <div class="finds">
+    <div class="find"><b>Home</b><span>A hidden link inside the main heading, which also leaked into the page description shown to Google and social media.</span><span class="pill warn">Seen on page</span></div>
+    <div class="find"><b>Home</b><span>A thesis-writing service presented in the welcome text as a "trusted partner".</span><span class="pill warn">Seen on page</span></div>
+    <div class="find"><b>Home</b><span>A gambling site inserted into the "Get in Touch" section.</span><span class="pill warn">Seen on page</span></div>
+    <div class="find"><b>About us</b><span>An unrelated overseas domain placed mid-sentence in the company description.</span><span class="pill crit">Found by scan</span></div>
+    <div class="find"><b>Services</b><span>A second unrelated overseas domain placed mid-sentence in the inspector description.</span><span class="pill crit">Found by scan</span></div>
+  </div>
+
+  <h3>How the investigation went</h3>
+  <ol class="steps">
+    <li><strong>Spotted it after a restore</strong><p>Three foreign links on the homepage, present in the backup itself. Reported as a compromise, not a cosmetic fault.</p></li>
+    <li><strong>Wrote a read-only scan</strong><p>Twelve SELECT checks across posts, post meta, options, users, comments and scheduled tasks. Nothing changed while looking.</p></li>
+    <li><strong>Hit a regex timeout</strong><p>MySQL 8 stopped with "Timeout exceeded in regular expression match" on large page-builder content. Rewrote the searches with LIKE.</p></li>
+    <li><strong>Read the exported rows</strong><p>Exported the rows with full content and pulled out every link address in each page.</p></li>
+    <li><strong>Found new domains</strong><p>Two more pages linked to domains not on the original list. A fixed blocklist would never have found them.</p></li>
+    <li><strong>Searched by pattern</strong><p>Changed the scan to list any link leaving the site's own addresses, then prepared an exact removal statement for each one.</p></li>
+  </ol>
+
+  <h3>The twelve checks</h3>
+  <div class="checks12">
+    <div class="c12"><em>wp_posts</em><strong>Known bad domains in content</strong><span>Pages, posts and saved revisions.</span></div>
+    <div class="c12"><em>wp_postmeta</em><strong>Known bad domains in post meta</strong><span>Page-builder data and SEO descriptions.</span></div>
+    <div class="c12"><em>wp_options</em><strong>Known bad domains in options</strong><span>Widgets, theme settings and the tagline.</span></div>
+    <div class="c12"><em>wp_posts</em><strong>Spam keywords</strong><span>Gambling, essay-writing and pharmacy terms.</span></div>
+    <div class="c12"><em>wp_posts</em><strong>Hidden links</strong><span>Styled invisible to visitors but not to search engines.</span></div>
+    <div class="c12"><em>wp_posts</em><strong>Any external link</strong><span>Every published page that links away from the site.</span></div>
+    <div class="c12"><em>posts · options</em><strong>Injected code</strong><span>Scripts, iframes and obfuscated functions.</span></div>
+    <div class="c12"><em>wp_options</em><strong>Core settings</strong><span>Site address, admin email, registration, default role.</span></div>
+    <div class="c12"><em>wp_users</em><strong>Administrator accounts</strong><span>Every admin, recent users, ownerless privileges.</span></div>
+    <div class="c12"><em>wp_posts</em><strong>Recently changed content</strong><span>Modification dates against real editing activity.</span></div>
+    <div class="c12"><em>cron option</em><strong>Scheduled tasks</strong><span>Cron hooks that could put the links back.</span></div>
+    <div class="c12"><em>comments · terms</em><strong>Comments and categories</strong><span>Links in comments and term descriptions.</span></div>
+  </div>
+
+  <h3>The SQL behind it</h3>
+  <p class="lede">Run in phpMyAdmin (now at 127.0.0.1:8080 on the VM) or any MySQL client. Domains are placeholders. Change <code>wp_</code> if the site uses another table prefix.</p>
+  <div class="cmd-grid" id="scan-sql"></div>
+
+  <h3>What the incident taught</h3>
+  <div class="takeaways">
+    <div class="take"><strong>A backup is not a clean copy</strong><p>If the infection predates the backup, restoring it restores the attacker's work too.</p></div>
+    <div class="take"><strong>Search for the pattern</strong><p>Attackers rotate domains. Listing every outbound link finds what a blocklist misses.</p></div>
+    <div class="take"><strong>Look before changing</strong><p>Read-only queries first, a database backup second, a narrow REPLACE on one row last.</p></div>
+    <div class="take"><strong>Dates can mislead</strong><p>A link written straight into the database doesn't update the page's modified date.</p></div>
+    <div class="take"><strong>The database is half the job</strong><p>Injected content usually comes with a backdoor in plugin, theme or upload files.</p></div>
+  </div>
+</section>
+
+<!-- CONFIGS -->
+<section class="block" id="configs">
+  <div class="head"><span class="eyebrow">Final, working configuration</span><h2>web.config files</h2>
+  <p class="lede">Three live files in three folders. The root file applies to the whole site and the WordPress application inherits it, which is why deleting the root file stopped PHP running anywhere. The Phase 1 tab shows the starting point for comparison.</p></div>
+  <div>
+    <div class="tabs" role="tablist" aria-label="Configuration files">
+      <button class="tab" role="tab" id="tab-wp" aria-controls="panel-wp" aria-selected="true">WordPress app</button>
+      <button class="tab" role="tab" id="tab-root" aria-controls="panel-root" aria-selected="false">Root wwwroot</button>
+      <button class="tab" role="tab" id="tab-pma" aria-controls="panel-pma" aria-selected="false">phpMyAdmin-private</button>
+      <button class="tab" role="tab" id="tab-snip" aria-controls="panel-snip" aria-selected="false">WordPress snippet</button>
+      <button class="tab" role="tab" id="tab-p1" aria-controls="panel-p1" aria-selected="false">Phase 1 version</button>
+    </div>
+    <div class="codebox" role="tabpanel" id="panel-wp" aria-labelledby="tab-wp"><div class="path">C:\inetpub\wwwroot\wordpress\web.config · current</div><button class="copy" type="button">Copy</button><pre class="xml">&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;configuration&gt;
+
+  &lt;system.webServer&gt;
+
+    &lt;!-- Default document --&gt;
+    &lt;defaultDocument&gt;
+      &lt;files&gt;
+        &lt;add value="index.php" /&gt;
+      &lt;/files&gt;
+    &lt;/defaultDocument&gt;
+
+    &lt;!-- Never list folder contents --&gt;
+    &lt;directoryBrowse enabled="false" /&gt;
+
+    &lt;!-- Turn off IIS output/kernel caching for WordPress so pages are never
+         served from memory before the rewrite rules below can run --&gt;
+    &lt;caching enabled="false" enableKernelCache="false" /&gt;
+
+    &lt;!-- Block direct access to sensitive files (returns 404) --&gt;
+    &lt;security&gt;
+      &lt;requestFiltering&gt;
+        &lt;hiddenSegments&gt;
+          &lt;add segment="wp-config.php" /&gt;
+          &lt;add segment="xmlrpc.php" /&gt;
+          &lt;add segment="debug.log" /&gt;
+        &lt;/hiddenSegments&gt;
+      &lt;/requestFiltering&gt;
+    &lt;/security&gt;
+
+    &lt;!-- Hide the PHP version and add security headers --&gt;
+    &lt;httpProtocol&gt;
+      &lt;customHeaders&gt;
+        &lt;remove name="X-Powered-By" /&gt;
+        &lt;remove name="X-Content-Type-Options" /&gt;
+        &lt;add name="X-Content-Type-Options" value="nosniff" /&gt;
+        &lt;remove name="X-Frame-Options" /&gt;
+        &lt;add name="X-Frame-Options" value="SAMEORIGIN" /&gt;
+        &lt;remove name="Referrer-Policy" /&gt;
+        &lt;add name="Referrer-Policy" value="strict-origin-when-cross-origin" /&gt;
+        &lt;!-- Limit browser features the site doesn't use --&gt;
+        &lt;remove name="Permissions-Policy" /&gt;
+        &lt;add name="Permissions-Policy" value="camera=(), microphone=(), payment=(), usb=()" /&gt;
+        &lt;!-- HSTS: browsers always use HTTPS for this domain.
+             Set to 1 year after a week of testing at 1 day (86400).
+             Every address on this domain must work over HTTPS. --&gt;
+        &lt;remove name="Strict-Transport-Security" /&gt;
+        &lt;add name="Strict-Transport-Security" value="max-age=31536000" /&gt;
+      &lt;/customHeaders&gt;
+    &lt;/httpProtocol&gt;
+
+    &lt;!-- WordPress rewrite rules --&gt;
+    &lt;rewrite&gt;
+      &lt;rules&gt;
+
+        &lt;!-- Send all HTTP traffic to HTTPS.
+             {REQUEST_URI} keeps the /wordpress part of the address.
+             Change Temporary to Permanent once you have tested it. --&gt;
+        &lt;rule name="HTTPS redirect" stopProcessing="true"&gt;
+          &lt;match url="(.*)" /&gt;
+          &lt;conditions&gt;
+            &lt;add input="{HTTPS}" pattern="off" /&gt;
+          &lt;/conditions&gt;
+          &lt;action type="Redirect" url="https://{HTTP_HOST}{REQUEST_URI}" redirectType="Temporary" /&gt;
+        &lt;/rule&gt;
+
+        &lt;!-- ===== Hide usernames from the public ===== --&gt;
+
+        &lt;!-- Author pages like /wordpress/author/admin/ go to the home page --&gt;
+        &lt;rule name="Block author pages" stopProcessing="true"&gt;
+          &lt;match url="^author/.+" /&gt;
+          &lt;action type="Redirect" url="/wordpress/" redirectType="Permanent" /&gt;
+        &lt;/rule&gt;
+
+        &lt;!-- ?author=1 lookups go to the home page --&gt;
+        &lt;rule name="Block author query" stopProcessing="true"&gt;
+          &lt;match url=".*" /&gt;
+          &lt;conditions&gt;
+            &lt;add input="{QUERY_STRING}" pattern="(^|&amp;amp;)author=\d+" /&gt;
+          &lt;/conditions&gt;
+          &lt;action type="Redirect" url="/wordpress/" appendQueryString="false" redirectType="Permanent" /&gt;
+        &lt;/rule&gt;
+
+        &lt;!-- REST API users list: 404 for visitors who are not logged in --&gt;
+        &lt;rule name="Block REST users path" stopProcessing="true"&gt;
+          &lt;match url="^wp-json/wp/v2/users" /&gt;
+          &lt;conditions&gt;
+            &lt;add input="{HTTP_COOKIE}" pattern="wordpress_logged_in_" negate="true" /&gt;
+          &lt;/conditions&gt;
+          &lt;action type="CustomResponse" statusCode="404" statusReason="Not Found" statusDescription="Not Found" /&gt;
+        &lt;/rule&gt;
+
+        &lt;!-- Same list via ?rest_route=/wp/v2/users --&gt;
+        &lt;rule name="Block REST users query" stopProcessing="true"&gt;
+          &lt;match url=".*" /&gt;
+          &lt;conditions&gt;
+            &lt;add input="{QUERY_STRING}" pattern="rest_route=(/|%2F)wp(/|%2F)v2(/|%2F)users" /&gt;
+            &lt;add input="{HTTP_COOKIE}" pattern="wordpress_logged_in_" negate="true" /&gt;
+          &lt;/conditions&gt;
+          &lt;action type="CustomResponse" statusCode="404" statusReason="Not Found" statusDescription="Not Found" /&gt;
+        &lt;/rule&gt;
+
+        &lt;!-- ===== End hide usernames ===== --&gt;
+
+        &lt;rule name="WordPress Rule" stopProcessing="true"&gt;
+          &lt;match url=".*" /&gt;
+          &lt;conditions logicalGrouping="MatchAll"&gt;
+            &lt;add input="{REQUEST_FILENAME}" matchType="IsFile" negate="true" /&gt;
+            &lt;add input="{REQUEST_FILENAME}" matchType="IsDirectory" negate="true" /&gt;
+          &lt;/conditions&gt;
+          &lt;action type="Rewrite" url="index.php" /&gt;
+        &lt;/rule&gt;
+
+      &lt;/rules&gt;
+    &lt;/rewrite&gt;
+
+  &lt;/system.webServer&gt;
+
+&lt;/configuration&gt;</pre></div>
+    <div class="codebox" role="tabpanel" id="panel-root" aria-labelledby="tab-root" hidden><div class="path">C:\inetpub\wwwroot\web.config · current</div><button class="copy" type="button">Copy</button><pre class="xml">&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;configuration&gt;
+    &lt;system.webServer&gt;
+        &lt;handlers&gt;
+            &lt;add name="PHP_via_FASTCGI" path="*.php" verb="*" modules="FastCgiModule" scriptProcessor="c:\php\php-cgi.exe" resourceType="File" /&gt;
+        &lt;/handlers&gt;
+
+        &lt;rewrite&gt;
+            &lt;rules&gt;
+                &lt;!-- Send the home page (/) of the Default Web Site to WordPress.
+                     Only matches exactly "/", so /wordpress, /bookingportal and
+                     /phpmyadmin are not affected and there is no redirect loop.
+                     Change Temporary to Permanent once you have tested it. --&gt;
+                &lt;rule name="Root to WordPress" stopProcessing="true"&gt;
+                    &lt;match url=".*" /&gt;
+                    &lt;conditions&gt;
+                        &lt;add input="{REQUEST_URI}" pattern="^/$" /&gt;
+                    &lt;/conditions&gt;
+                    &lt;action type="Redirect" url="https://www.example.com/wordpress/" redirectType="Temporary" /&gt;
+                &lt;/rule&gt;
+            &lt;/rules&gt;
+        &lt;/rewrite&gt;
+    &lt;/system.webServer&gt;
+&lt;/configuration&gt;</pre></div>
+    <div class="codebox" role="tabpanel" id="panel-pma" aria-labelledby="tab-pma" hidden><div class="path">C:\inetpub\phpmyadmin\web.config · current</div><button class="copy" type="button">Copy</button><pre class="xml">&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;!-- web.config for the private phpMyAdmin site (C:\inetpub\phpmyadmin)
+     This site is bound to 127.0.0.1:8080 only, so it can be opened
+     on the VM itself at http://127.0.0.1:8080/ and nowhere else. --&gt;
+&lt;configuration&gt;
+  &lt;system.webServer&gt;
+
+    &lt;!-- Run .php files with PHP (same php-cgi.exe as the main site) --&gt;
+    &lt;handlers&gt;
+      &lt;add name="PHP_via_FastCGI_pma" path="*.php" verb="*" modules="FastCgiModule"
+           scriptProcessor="c:\php\php-cgi.exe" resourceType="File" /&gt;
+    &lt;/handlers&gt;
+
+    &lt;!-- Open index.php automatically (fixes the 403.14 error) --&gt;
+    &lt;defaultDocument&gt;
+      &lt;files&gt;
+        &lt;clear /&gt;
+        &lt;add value="index.php" /&gt;
+      &lt;/files&gt;
+    &lt;/defaultDocument&gt;
+
+    &lt;!-- Never list folder contents --&gt;
+    &lt;directoryBrowse enabled="false" /&gt;
+
+  &lt;/system.webServer&gt;
+&lt;/configuration&gt;</pre></div>
+    <div class="codebox" role="tabpanel" id="panel-snip" aria-labelledby="tab-snip" hidden><div class="path">WordPress admin → Snippets → Add New · run everywhere (optional second layer)</div><button class="copy" type="button">Copy</button><pre>// 1. Hide the users list from the REST API for anyone not logged in
+add_filter( 'rest_endpoints', function ( $endpoints ) {
+    if ( ! is_user_logged_in() ) {
+        unset( $endpoints['/wp/v2/users'] );
+        unset( $endpoints['/wp/v2/users/(?P&lt;id&gt;[\d]+)'] );
+    }
+    return $endpoints;
+} );
+
+// 2. Block author pages and ?author= lookups for logged-out visitors
+add_action( 'template_redirect', function () {
+    if ( is_user_logged_in() ) {
+        return;
+    }
+    if ( is_author() || isset( $_GET['author'] ) ) {
+        wp_safe_redirect( home_url( '/' ), 301 );
+        exit;
+    }
+}, 1 );
+
+// 3. Remove users from the WordPress XML sitemap
+add_filter( 'wp_sitemaps_add_provider', function ( $provider, $name ) {
+    return ( 'users' === $name ) ? false : $provider;
+}, 10, 2 );</pre></div>
+    <div class="codebox" role="tabpanel" id="panel-p1" aria-labelledby="tab-p1" hidden><div class="path">WordPress web.config at the end of Phase 1 · superseded</div><button class="copy" type="button">Copy</button><pre class="xml">&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;configuration&gt;
+  &lt;system.webServer&gt;
+
+    &lt;defaultDocument&gt;
+      &lt;files&gt;&lt;add value="index.php" /&gt;&lt;/files&gt;
+    &lt;/defaultDocument&gt;
+
+    &lt;directoryBrowse enabled="false" /&gt;
+
+    &lt;security&gt;
+      &lt;requestFiltering removeServerHeader="true"&gt;
+        &lt;hiddenSegments&gt;
+          &lt;add segment="wp-config.php" /&gt;
+          &lt;add segment="xmlrpc.php" /&gt;
+          &lt;add segment="debug.log" /&gt;
+        &lt;/hiddenSegments&gt;
+      &lt;/requestFiltering&gt;
+    &lt;/security&gt;
+
+    &lt;httpProtocol&gt;
+      &lt;customHeaders&gt;
+        &lt;remove name="X-Powered-By" /&gt;
+        &lt;remove name="X-Content-Type-Options" /&gt;
+        &lt;add name="X-Content-Type-Options" value="nosniff" /&gt;
+        &lt;remove name="X-Frame-Options" /&gt;
+        &lt;add name="X-Frame-Options" value="SAMEORIGIN" /&gt;
+        &lt;remove name="Referrer-Policy" /&gt;
+        &lt;add name="Referrer-Policy" value="strict-origin-when-cross-origin" /&gt;
+      &lt;/customHeaders&gt;
+    &lt;/httpProtocol&gt;
+
+    &lt;rewrite&gt;
+      &lt;rules&gt;
+        &lt;!-- Enable once HTTPS works
+        &lt;rule name="HTTPS redirect" stopProcessing="true"&gt;
+          &lt;match url="(.*)" /&gt;
+          &lt;conditions&gt;&lt;add input="{HTTPS}" pattern="off" /&gt;&lt;/conditions&gt;
+          &lt;action type="Redirect" url="https://{HTTP_HOST}/{R:1}" redirectType="Permanent" /&gt;
+        &lt;/rule&gt;
+        --&gt;
+        &lt;rule name="WordPress Rule" stopProcessing="true"&gt;
+          &lt;match url=".*" /&gt;
+          &lt;conditions logicalGrouping="MatchAll"&gt;
+            &lt;add input="{REQUEST_FILENAME}" matchType="IsFile" negate="true" /&gt;
+            &lt;add input="{REQUEST_FILENAME}" matchType="IsDirectory" negate="true" /&gt;
+          &lt;/conditions&gt;
+          &lt;action type="Rewrite" url="index.php" /&gt;
+        &lt;/rule&gt;
+      &lt;/rules&gt;
+    &lt;/rewrite&gt;
+
+  &lt;/system.webServer&gt;
+&lt;/configuration&gt;</pre></div>
+  </div>
+</section>
+
+<!-- COMMANDS -->
+<section class="block" id="commands">
+  <div class="head"><span class="eyebrow">Built-in Windows tools, run as Administrator</span><h2>Command reference</h2>
+  <p class="lede">Audit commands come first in each block, so every change is made against a known starting state. Paths assume a default IIS install.</p></div>
+  <div class="cgroups" id="cgroups" role="group" aria-label="Command groups"></div>
+  <div class="cmd-grid" id="cmds"></div>
+</section>
+
+<!-- CHECKLIST -->
+<section class="block" id="checklist">
+  <div class="check-head">
+    <div class="head"><span class="eyebrow">Routine inspection schedule</span><h2>Prevention checklist</h2>
+    <p class="lede">Run outside checks from a phone on mobile data in a private tab, so you see what the internet sees. Ticks are saved in this browser only.</p></div>
+    <div class="meter"><div class="bar" aria-hidden="true"><i id="bar"></i></div><span id="count">0 / 0</span><button class="reset" type="button" id="reset">Clear ticks</button></div>
+  </div>
+  <div class="freq">
+    <div class="card"><h3>After every change <span>~5 min</span></h3><div class="ck">
+      <label><input type="checkbox" id="c5"><span>Config files backed up first<small>C:\config-backups\&lt;date&gt;</small></span></label>
+      <label><input type="checkbox" id="c1"><span>Home page and login load<small>/wordpress/ · /wordpress/wp-login.php</small></span></label>
+      <label><input type="checkbox" id="c2"><span>User list returns 404<small>/wordpress/wp-json/wp/v2/users</small></span></label>
+      <label><input type="checkbox" id="c3"><span>Author pages redirect home<small>/wordpress/?author=1 · /wordpress/author/&lt;name&gt;/</small></span></label>
+      <label><input type="checkbox" id="c4"><span>phpMyAdmin returns Not Found from outside<small>/phpmyadmin/</small></span></label>
+      <label><input type="checkbox" id="c19"><span>wp-config.php returns 404<small>/wordpress/wp-config.php</small></span></label>
+    </div></div>
+    <div class="card"><h3>Weekly <span>~10 min</span></h3><div class="ck">
+      <label><input type="checkbox" id="c6"><span>Apply WordPress, plugin and theme updates<small>Dashboard → Updates, after a snapshot</small></span></label>
+      <label><input type="checkbox" id="c7"><span>Delete readme.html if an update restored it<small>/wordpress/readme.html → 404</small></span></label>
+      <label><input type="checkbox" id="c8"><span>Review failed sign-ins<small>Security log Event ID 4625 · Wordfence alerts</small></span></label>
+      <label><input type="checkbox" id="c9"><span>Look for unknown admin accounts<small>Users → Administrator · or the SQL check</small></span></label>
+    </div></div>
+    <div class="card"><h3>Monthly <span>~20 min</span></h3><div class="ck">
+      <label><input type="checkbox" id="c10"><span>Header scan still grade A<small>securityheaders.com</small></span></label>
+      <label><input type="checkbox" id="c11"><span>TLS certificate valid with time to spare<small>ssllabs.com/ssltest</small></span></label>
+      <label><input type="checkbox" id="c12"><span>Plugins checked against vulnerability feeds<small>wordfence.com/threat-intel</small></span></label>
+      <label><input type="checkbox" id="c13"><span>Windows Updates installed and restarted<small>Settings → Windows Update</small></span></label>
+      <label><input type="checkbox" id="c20"><span>Rate-limit log reviewed<small>Dynamic IP Restrictions entries in IIS logs</small></span></label>
+      <label><input type="checkbox" id="c14"><span>Test a backup restore<small>Database export + files + VM snapshot</small></span></label>
+    </div></div>
+    <div class="card"><h3>Quarterly <span>~30 min</span></h3><div class="ck">
+      <label><input type="checkbox" id="c15"><span>Edge and NAT rules: only 80 and 443 forwarded<small>Cloud Director → Edge Gateway → Firewall and NAT</small></span></label>
+      <label><input type="checkbox" id="c21"><span>Host firewall: no new inbound allow rules<small>Get-NetFirewallRule -Direction Inbound -Enabled True</small></span></label>
+      <label><input type="checkbox" id="c16"><span>Remove unused plugins, themes and accounts<small>Fewer components, fewer flaws</small></span></label>
+      <label><input type="checkbox" id="c17"><span>Rotate database and admin passwords<small>Update wp-config.php after changing the DB password</small></span></label>
+      <label><input type="checkbox" id="c22"><span>Run the twelve database checks<small>Incident section SQL</small></span></label>
+      <label><input type="checkbox" id="c18"><span>Repeat every test in the Tests section<small>Compare against this case file</small></span></label>
+    </div></div>
+  </div>
+</section>
+
+<!-- LESSONS -->
+<section class="block" id="lessons">
+  <div class="head"><span class="eyebrow">Phase 2 · same-day timeline, local time</span><h2>Lessons learned</h2>
+  <p class="lede">Two short outages happened during Phase 2. Both came from changes on the server, and both were caught by re-testing straight after the change.</p></div>
+  <div class="card"><div class="timeline">
+    <div class="ev"><span class="t">10:57</span><div class="w">External review starts</div><p>Headers grade F. Three usernames, an open database console, outdated core and plugin found.</p></div>
+    <div class="ev"><span class="t">11:08 – 11:25</span><div class="w">WordPress snippet, then IIS rules</div><p>The snippet hid the user list only some of the time. The fix moved into IIS, where it doesn't depend on WordPress.</p><p class="lesson"><b>Lesson</b>Enforce security at the layer that can't be switched off by accident.</p></div>
+    <div class="ev"><span class="t">11:33</span><div class="w">Rules loaded but old pages still served</div><p>PowerShell proved the rules were live. Requests with a query string were blocked; plain URLs returned old author pages from the IIS kernel cache.</p><p class="lesson"><b>Lesson</b>Disable kernel caching for dynamic apps, and re-test with cache-busting URLs.</p></div>
+    <div class="ev good"><span class="t">11:48</span><div class="w">User enumeration closed</div><p>Confirmed from a phone on mobile data: 404 on the user list, author pages redirect home.</p></div>
+    <div class="ev"><span class="t">11:54</span><div class="w">IP restriction on phpMyAdmin didn't hold</div><p>The login page stayed reachable from outside despite the allow-list.</p><p class="lesson"><b>Lesson</b>If a tool is only used on the server, bind it to 127.0.0.1 instead of filtering by visitor IP.</p></div>
+    <div class="ev bad"><span class="t">12:05</span><div class="w">Outage: Default Web Site stopped</div><p>The site was stopped while creating the new phpMyAdmin site. Restarted within a minute.</p></div>
+    <div class="ev good"><span class="t">12:07</span><div class="w">phpMyAdmin private</div><p>Not Found from outside; working at 127.0.0.1:8080 on the VM.</p></div>
+    <div class="ev good"><span class="t">12:22</span><div class="w">WordPress core updated</div><p>Moved to the current security release after a VMware snapshot.</p></div>
+    <div class="ev bad"><span class="t">12:29</span><div class="w">Outage: root web.config deleted</div><p>Every PHP page returned 404 because the PHP handler lives in the root file. Restored from an earlier copy.</p><p class="lesson"><b>Lesson</b>Back up both config files before every change, and keep the backups outside wwwroot.</p></div>
+    <div class="ev good"><span class="t">12:41</span><div class="w">Headers grade A</div><p>HSTS at one year, Permissions-Policy added, PHP version hidden.</p></div>
+  </div></div>
+</section>
+
+<!-- ROADMAP -->
+<section class="block" id="roadmap">
+  <div class="head"><span class="eyebrow">Next phase, in priority order</span><h2>Roadmap</h2>
+  <p class="lede">Hardening is not finished after one pass. These items carry the open defects and the Phase 1 follow-ups forward.</p></div>
+  <div class="road">
+    <div class="card rd"><div class="top"><span class="pr">Priority 1</span><span class="pill p-open">Open · D-05</span></div><h3>Admin login protection</h3><p>Two-factor for every administrator, lockout after failed attempts, and the default <code>admin</code> account replaced.</p></div>
+    <div class="card rd"><div class="top"><span class="pr">Priority 2</span><span class="pill p-open">Open · D-04</span></div><h3>Update the slider plugin</h3><p>Move past the versions with published file-read flaws, through the theme's bundled-plugin page if it came with the theme.</p></div>
+    <div class="card rd"><div class="top"><span class="pr">Priority 3</span><span class="pill p-major">Partly done</span></div><h3>HTTPS and modern TLS</h3><p>Certificate, HTTPS redirect and HSTS are live. Still to do: disable TLS 1.0 and 1.1 and confirm automatic certificate renewal.</p></div>
+    <div class="card rd"><div class="top"><span class="pr">Priority 4</span><span class="pill p-open">Open · D-11</span></div><h3>Off-server backups</h3><p>Scheduled copies of site files and database stored away from the host, with one tested restore.</p></div>
+    <div class="card rd"><div class="top"><span class="pr">Priority 5</span><span class="pill p-open">Open</span></div><h3>Rotate keys and salts</h3><p>Replace the eight WordPress authentication keys, which signs out every existing session.</p></div>
+    <div class="card rd"><div class="top"><span class="pr">Priority 6</span><span class="pill p-open">Open</span></div><h3>Enforce rate limits</h3><p>Review the log-only data from Dynamic IP Restrictions, tune the thresholds, then switch to blocking.</p></div>
+  </div>
+</section>
+
+<section class="block card author" aria-label="About the author">
+  <div class="mono-av" aria-hidden="true">AJ</div>
+  <div style="display:flex;flex-direction:column;gap:6px;min-width:0"><span class="eyebrow">About the author</span><h3>Arif Jaffery · Tech Lead</h3><p>Led the website migration from Linux to Windows Server 2025 on a VMware cloud platform, including both hardening phases and the incident response recorded here. Available to discuss infrastructure migration and security hardening work.</p><a href="https://www.linkedin.com/in/arif-jaffery" target="_blank" rel="noopener">View profile on LinkedIn ↗</a></div>
+</section>
+
+<footer><span>Case file · WordPress on IIS hardening · Phases 1 and 2</span><span>Business name, server addresses, tenant and machine names, account names and credentials are deliberately left out.</span></footer>
+</div>
+<script>window.__CASE__={"ports": [{"p": "443", "s": "HTTPS · website", "edge": [1, 1], "host": [1, 1], "pub": 1}, {"p": "80", "s": "HTTP · redirects to HTTPS", "edge": [1, 1], "host": [1, 1], "pub": 1}, {"p": "3389", "s": "RDP · Remote Desktop", "edge": [1, 0], "host": [1, 0]}, {"p": "22", "s": "SSH · OpenSSH server", "edge": [0, 0], "host": [1, 0]}, {"p": "5985", "s": "WinRM · remote PowerShell", "edge": [0, 0], "host": [1, 0]}, {"p": "3306", "s": "MySQL", "edge": [0, 0], "host": [1, 0]}, {"p": "33060", "s": "MySQL X Protocol", "edge": [0, 0], "host": [1, 0]}, {"p": "554+", "s": "Casting and media streaming", "edge": [0, 0], "host": [1, 0]}], "layers": [{"id": "edge", "name": "Edge gateway", "intro": "The NSX edge in VMware Cloud Director decides what reaches the VM at all. The rule set already ended in a default drop; the gap was remote administration.", "tasks": [{"ph": 1, "t": "Reviewed every firewall and NAT rule", "s": "Confirmed a default-drop policy sits behind the allow rules", "what": "Read the full edge rule set and matched each firewall rule to its NAT rule.", "why": "An allow rule and a port forward only expose a service together. Reviewing them as pairs shows what is truly reachable."}, {"ph": 1, "t": "Closed Remote Desktop to the internet", "s": "The RDP allow rule had Source set to Any", "what": "Deactivated the firewall rule that allowed RDP from any address.", "why": "Internet-exposed RDP is one of the most common entry points into Windows servers. Bots attempt logins against it continuously."}, {"ph": 1, "t": "Removed the RDP port forward", "s": "DNAT for port 3389 deactivated", "what": "Deactivated the matching DNAT rule so the port is closed in both places.", "why": "If only one of the pair is removed, a later change to the other can reopen the port without anyone noticing."}, {"ph": 1, "t": "Moved administration to the VM console", "s": "Out-of-band access that needs no open port", "what": "Server administration now goes through the Cloud Director web console.", "why": "The console connects through the hypervisor, so no management port has to face the internet. Limited clipboard and file transfer was an accepted trade-off."}]}, {"id": "host", "name": "Windows Server", "intro": "A second firewall and a reduced set of services on the host mean a single mistake at the edge cannot expose the machine.", "tasks": [{"ph": 1, "t": "Brought the OS fully up to date", "s": "All pending updates installed and the server restarted", "what": "Installed every pending Windows update, including the monthly Malicious Software Removal Tool, and rebooted to complete them.", "why": "Patches do not protect anything until they are installed and the restart has happened."}, {"ph": 1, "t": "Disabled 32 inbound firewall rules", "s": "MySQL, RDP, SSH, WinRM, casting and device discovery", "what": "Audited every enabled inbound allow rule and switched off the ones a web server does not need.", "why": "Windows ships with many convenience rules enabled. Each one is a door that opens the moment the edge firewall is misconfigured.", "code": "Get-NetFirewallRule -Direction Inbound -Enabled True -Action Allow\nGet-NetFirewallRule -DisplayName \"Port 3306\",\"Port 33060\" | Disable-NetFirewallRule\nGet-NetFirewallRule -DisplayName \"Remote Desktop*\" -Direction Inbound | Disable-NetFirewallRule\nGet-NetFirewallRule -DisplayName \"OpenSSH*\",\"Windows Remote Management*\" -Direction Inbound | Disable-NetFirewallRule"}, {"ph": 1, "t": "Set account lockout and password policy", "s": "Lock after 5 failed attempts for 15 minutes; 14-character minimum", "what": "Applied a lockout threshold and minimum password length, disabled the Guest account, and reviewed membership of the Administrators group.", "why": "Lockout turns password guessing from thousands of attempts per hour into a handful.", "code": "net accounts /lockoutthreshold:5 /lockoutduration:15 /lockoutwindow:15 /minpwlen:14\nnet user Guest /active:no\nnet localgroup Administrators"}, {"ph": 1, "t": "Switched off unused services", "s": "SMB version 1, Print Spooler, Remote Desktop", "what": "Disabled legacy file sharing, the print service and the Remote Desktop service itself.", "why": "SMBv1 and the Print Spooler have both been used in major attacks, and a web server needs neither.", "code": "Set-SmbServerConfiguration -EnableSMB1Protocol $false -Force\nStop-Service Spooler; Set-Service Spooler -StartupType Disabled"}, {"ph": 1, "t": "Turned on sign-in auditing", "s": "Successful and failed logons recorded; Defender status verified", "what": "Enabled logon auditing and confirmed Microsoft Defender real-time protection and signatures are current.", "why": "Without an audit trail there is no way to tell an attempted break-in from a successful one.", "code": "auditpol /set /category:\"Logon/Logoff\" /success:enable /failure:enable\nGet-MpComputerStatus | Select AntivirusEnabled, RealTimeProtectionEnabled"}, {"ph": 2, "t": "Hid the PHP version", "s": "expose_php = Off in php.ini", "what": "PHP adds the X-Powered-By header itself, so the web.config removal alone did not hide it. Set expose_php = Off in C:\\php\\php.ini and restarted IIS.", "why": "A version banner lets scanners match the server to known PHP flaws in one request.", "code": "Select-String 'C:\\php\\php.ini' -Pattern '^\\s*expose_php'\n# expected: expose_php = Off\niisreset"}]}, {"id": "iis", "name": "IIS", "intro": "The web server should serve the site and nothing else: no file listings, no version banners, no user lists, no direct access to configuration files.", "tasks": [{"ph": 1, "t": "Blocked direct requests for sensitive files", "s": "wp-config.php, xmlrpc.php and debug.log return 404", "what": "Added request-filtering hidden segments to the site configuration.", "why": "These files hold credentials, accept remote login attempts, or leak internal paths. No visitor ever needs to request them."}, {"ph": 1, "t": "Added security response headers", "s": "nosniff, X-Frame-Options, Referrer-Policy", "what": "Set X-Content-Type-Options, X-Frame-Options and Referrer-Policy, and removed X-Powered-By.", "why": "The headers stop clickjacking and content-type tricks in the browser."}, {"ph": 1, "t": "Disabled directory browsing", "s": "Folders never list their contents", "what": "Turned the feature off at site level and in web.config.", "why": "A folder listing hands an attacker a map of plugin files, backups and uploads."}, {"ph": 1, "t": "Verified the application pool identity", "s": "Runs as ApplicationPoolIdentity, not an administrator", "what": "Checked the worker process account in the pool's advanced settings.", "why": "If the site is compromised, the attacker inherits this account's rights. A low-privilege identity limits the damage to the site."}, {"ph": 1, "t": "Confirmed WebDAV and FTP are not installed", "s": "No unused publishing features present", "what": "Queried the installed role services.", "why": "Both allow file uploads to the server and are frequent targets when left enabled by default.", "code": "Get-WindowsFeature Web-DAV-Publishing, Web-Ftp-Server, Web-Ftp-Service"}, {"ph": 1, "t": "Confirmed request logging", "s": "Every request recorded for investigation", "what": "Verified IIS logging is enabled for the site and noted the log location.", "why": "Logs are the evidence used to reconstruct an incident and to tune rate limits."}, {"ph": 1, "t": "Set up per-visitor rate limiting", "s": "Dynamic IP Restrictions, started in logging-only mode", "what": "Installed the IP security feature and configured limits on concurrent requests and requests over time.", "why": "Throttles crude floods and aggressive scanners. Starting in log-only mode avoids blocking real visitors while thresholds are tuned.", "code": "Install-WindowsFeature Web-IP-Security"}, {"ph": 2, "t": "Enabled the HTTPS redirect", "s": "Every http:// request sent to https://", "what": "Activated the redirect rule that was commented out in Phase 1, now that a certificate is installed.", "why": "Passwords and session cookies must never travel unencrypted."}, {"ph": 2, "t": "Added HSTS and Permissions-Policy", "s": "max-age one year; camera, microphone, payment and USB off", "what": "Started HSTS at one day, confirmed every address on the host name works over HTTPS, then raised it to one year.", "why": "HSTS stops downgrade attacks by making browsers refuse plain HTTP. Header grade went from F to A."}, {"ph": 2, "t": "Blocked user enumeration", "s": "REST user list, author pages and ?author=N", "what": "Added four URL Rewrite rules. Logged-out visitors get 404 or a redirect home; logged-in editors are unaffected.", "why": "The REST API was listing every login name. Attackers use that list to aim password guessing at real accounts."}, {"ph": 2, "t": "Turned off IIS output and kernel caching", "s": "\u003ccaching enabled=\"false\" enableKernelCache=\"false\" /\u003e", "what": "Disabled IIS caching for the WordPress application and ran iisreset.", "why": "The kernel cache served old author pages straight from memory before the rewrite rules could run."}, {"ph": 2, "t": "Dropped removeServerHeader", "s": "Kept the config compatible with this IIS build", "what": "Removed the removeServerHeader attribute from requestFiltering during the Phase 2 change window.", "why": "Some IIS builds reject the attribute and fail every request with a 500.19 error. The Server header only names IIS, a low risk."}]}, {"id": "wp", "name": "WordPress", "intro": "Application-level settings, versions and file permissions decide how far an attacker gets after finding a vulnerable plugin.", "tasks": [{"ph": 1, "t": "Audited wp-config.php line by line", "s": "Debug output hidden from visitors; dashboard file editor disabled", "what": "Reviewed every setting, set WP_DEBUG_DISPLAY to false, and confirmed DISALLOW_FILE_EDIT is on.", "why": "Visible debug errors reveal file paths and database queries. The built-in editor lets a stolen admin login become code execution.", "code": "define( 'WP_DEBUG', false );\ndefine( 'WP_DEBUG_LOG', false );\ndefine( 'WP_DEBUG_DISPLAY', false );\ndefine( 'DISALLOW_FILE_EDIT', true );"}, {"ph": 1, "t": "Restricted who can read the config file", "s": "Inheritance removed; read-only for the web server", "what": "Replaced inherited NTFS permissions on wp-config.php with an explicit list: administrators and SYSTEM in full, IIS read-only.", "why": "By default any local user account could read the database password, and the web process could overwrite the file.", "code": "icacls \"C:\\inetpub\\wwwroot\\wordpress\\wp-config.php\" /inheritance:r /grant:r \"Administrators:F\" \"SYSTEM:F\" \"IIS_IUSRS:R\" \"IUSR:R\""}, {"ph": 1, "t": "Audited NTFS permissions on the site folder", "s": "No Everyone entry; no web account with Full Control", "what": "Read the full access list and kept write access so automatic security updates continue to work.", "why": "A fully read-only site is tighter but stops WordPress patching itself, which is the bigger risk for a small team.", "code": "icacls \"C:\\inetpub\\wwwroot\\wordpress\""}, {"ph": 1, "t": "Blocked XML-RPC", "s": "A legacy remote API used for password guessing", "what": "Denied requests to xmlrpc.php at the web server.", "why": "The endpoint lets bots test many passwords per request and is unused unless the mobile app or Jetpack is in play."}, {"ph": 2, "t": "Updated core to the current security release", "s": "7.0.2 → 7.1.3, after a VM snapshot", "what": "Took a VMware snapshot and database export, updated plugins and theme, then core, then tested the home page, login and editor.", "why": "7.1.3 fixed seven security issues, including stored XSS and SQL injection in export."}, {"ph": 2, "t": "Removed readme.html", "s": "Deleted after every update", "what": "Deleted the file from the WordPress folder. Updates restore it, so it is on the weekly checklist.", "why": "It confirms the platform to fingerprinting tools."}, {"ph": 2, "t": "Added a second layer for user hiding", "s": "Code Snippets plugin, run everywhere", "what": "A snippet removes the REST users route, blocks author archives and drops users from the sitemap.", "why": "If a future IIS change loses the rewrite rules, WordPress still refuses to list users."}]}, {"id": "db", "name": "Database", "intro": "The database only needs to talk to the application on the same machine, and its admin console only needs to be reachable from that machine too.", "tasks": [{"ph": 1, "t": "Confirmed a local-only database connection", "s": "WordPress connects over 127.0.0.1", "what": "Verified the application reaches MySQL through the loopback address.", "why": "A loopback connection needs no firewall rule, so the database ports can be closed to the network entirely."}, {"ph": 1, "t": "Closed MySQL ports at the host firewall", "s": "3306 and 33060 no longer accept network connections", "what": "Disabled both inbound rules created by the MySQL installer.", "why": "Combined with the edge default-drop rule, the database is unreachable from outside at two independent layers."}, {"ph": 1, "t": "Verified a dedicated, least-privilege login", "s": "WordPress does not use the root account", "what": "Confirmed the site uses its own database user with a strong password.", "why": "If the site is compromised, the attacker gets one database rather than the whole server."}, {"ph": 2, "t": "Took phpMyAdmin off the public website", "s": "Separate IIS site bound to 127.0.0.1:8080", "what": "Moved the folder out of wwwroot and created a private site that only listens on the loopback address. Used from the VM console at http://127.0.0.1:8080/.", "why": "The login page was reachable from the internet over HTTP and HTTPS. An IP allow-list did not hold; a loopback binding cannot be reached from outside at all."}]}], "roles": [{"n": "Subscriber", "lv": 0, "badge": ["warn", "Tested first"], "note": "The first test account. It could sign in, but the Pages menu was missing, so the theme's builder pages could not be opened."}, {"n": "Contributor", "lv": 1, "note": "Can draft posts for someone else to review. Still no access to Pages."}, {"n": "Author", "lv": 2, "note": "Can publish their own posts and upload media. Still no access to Pages."}, {"n": "Editor", "lv": 7, "badge": ["good", "Role assigned"], "note": "The lowest built-in role that can open and edit the builder pages. No access to plugins, themes, users or settings."}, {"n": "Administrator", "lv": 10, "badge": ["crit", "Not handed out"], "note": "Full control of the site. Kept for named administrators and not used for day-to-day content work."}], "caps": [["Sign in and manage their own profile", 0], ["Write their own posts as drafts", 1], ["Publish their own posts and upload media", 2], ["See the Pages menu and open the builder pages", 3], ["Edit and publish other people's content", 3], ["Moderate comments", 3], ["Install or edit plugins and themes", 4], ["Manage users and site settings", 4]], "cmds": [["host", "Windows host", [{"t": "Identify the platform", "sh": "PowerShell", "note": "Confirms the OS is a supported release and shows which web server owns port 80.", "code": "(Get-ComputerInfo).OsName\nGet-Process -Id (Get-NetTCPConnection -LocalPort 80 -State Listen).OwningProcess"}, {"t": "Accounts and lockout policy", "sh": "Command Prompt", "note": "The * makes Windows prompt for the password, so it never appears on screen or in history.", "code": "# Review\nnet user\nnet localgroup Administrators\nnet accounts\n\n# Harden\nnet user Guest /active:no\nnet accounts /lockoutthreshold:5 /lockoutduration:15 /lockoutwindow:15 /minpwlen:14\n\n# Named admin account in place of the built-in one\nnet user yourname * /add\nnet localgroup Administrators yourname /add"}, {"t": "Windows Firewall: audit", "sh": "PowerShell", "note": "All three profiles should be enabled with inbound traffic blocked by default.", "code": "Get-NetFirewallProfile | Select Name, Enabled, DefaultInboundAction\nSet-NetFirewallProfile -All -Enabled True -DefaultInboundAction Block\n\n# Every inbound rule that currently allows traffic\nGet-NetFirewallRule -Direction Inbound -Enabled True -Action Allow | Select DisplayName, Profile"}, {"t": "Windows Firewall: disable unneeded rules", "sh": "PowerShell", "note": "Rules are disabled, not deleted. Enable-NetFirewallRule with the same name reverses any of them.", "code": "Get-NetFirewallRule -DisplayName \"Port 3306\",\"Port 33060\" | Disable-NetFirewallRule\nGet-NetFirewallRule -DisplayName \"Remote Desktop*\" -Direction Inbound | Disable-NetFirewallRule\nGet-NetFirewallRule -DisplayName \"OpenSSH*\",\"Windows Remote Management*\" -Direction Inbound | Disable-NetFirewallRule\nGet-NetFirewallRule -DisplayName \"Cast to Device*\",\"Wireless Display*\",\"DIAL*\",\"WFD*\",\"AllJoyn*\",\"Microsoft Media Foundation*\" -Direction Inbound | Disable-NetFirewallRule"}, {"t": "Unused services", "sh": "PowerShell", "note": "Legacy file sharing, printing and SSH have no role on a single-purpose web server.", "code": "Set-SmbServerConfiguration -EnableSMB1Protocol $false -Force\nStop-Service Spooler; Set-Service Spooler -StartupType Disabled\n\nGet-Service sshd | Select Name, Status, StartType\nStop-Service sshd; Set-Service sshd -StartupType Disabled"}, {"t": "Antivirus and sign-in auditing", "sh": "PowerShell", "note": "Failed logons then appear in the Security event log as Event ID 4625.", "code": "Get-MpComputerStatus | Select AntivirusEnabled, RealTimeProtectionEnabled, AntivirusSignatureLastUpdated\nauditpol /set /category:\"Logon/Logoff\" /success:enable /failure:enable"}]], ["iis", "IIS and web.config", [{"t": "Back up both config files first", "sh": "PowerShell", "note": "Timestamped copies outside wwwroot. Skipping this step caused the Phase 2 outage.", "code": "$d = Get-Date -Format 'yyyyMMdd-HHmm'\n$dst = \"C:\\config-backups\\$d\"\nNew-Item -ItemType Directory -Path $dst | Out-Null\nCopy-Item 'C:\\inetpub\\wwwroot\\web.config' \"$dst\\root.web.config\"\nCopy-Item 'C:\\inetpub\\wwwroot\\wordpress\\web.config' \"$dst\\wordpress.web.config\""}, {"t": "Which web.config does IIS use?", "sh": "PowerShell", "note": "Shows the file IIS loads for the WordPress application and every rewrite rule it has active.", "code": "Import-Module WebAdministration\nGet-WebConfigFile 'IIS:\\Sites\\Default Web Site\\wordpress'\nGet-WebConfiguration -PSPath 'IIS:\\Sites\\Default Web Site\\wordpress' `\n  -Filter 'system.webServer/rewrite/rules/rule' | Select-Object name"}, {"t": "Application folder", "sh": "PowerShell", "note": "Confirms the physical path behind the application.", "code": "& \"$env:windir\\system32\\inetsrv\\appcmd.exe\" list vdir \"Default Web Site/wordpress/\""}, {"t": "IIS features", "sh": "PowerShell", "note": "Checks for unused publishing features and adds the module that provides per-visitor rate limiting.", "code": "Get-WindowsFeature Web-DAV-Publishing, Web-Ftp-Server, Web-Ftp-Service\nGet-WindowsFeature Web-IP-Security\nInstall-WindowsFeature Web-IP-Security\n\n# Open IIS Manager\ninetmgr"}, {"t": "Restart IIS and clear its caches", "sh": "PowerShell", "note": "Needed after php.ini changes and to flush cached pages.", "code": "iisreset"}, {"t": "Find the client IP IIS sees", "sh": "PowerShell", "note": "Useful when an IP restriction doesn't behave as expected.", "code": "Get-ChildItem 'C:\\inetpub\\logs\\LogFiles\\W3SVC1' |\n  Sort-Object LastWriteTime | Select-Object -Last 1 |\n  Get-Content -Tail 20"}]], ["wp", "WordPress", [{"t": "NTFS permissions", "sh": "Command Prompt", "note": "Read the existing access list first. The last line restores inherited permissions if the site stops loading.", "code": "# Audit the site folder\nicacls \"C:\\inetpub\\wwwroot\\wordpress\"\n\n# Lock down the config file\nicacls \"C:\\inetpub\\wwwroot\\wordpress\\wp-config.php\" /inheritance:r /grant:r \"Administrators:F\" \"SYSTEM:F\" \"IIS_IUSRS:R\" \"IUSR:R\"\n\n# Roll back\nicacls \"C:\\inetpub\\wwwroot\\wordpress\\wp-config.php\" /reset"}, {"t": "Debug settings", "sh": "PHP · wp-config.php", "note": "Errors are never shown to visitors, and the dashboard file editor stays off.", "code": "define( 'WP_DEBUG', false );\ndefine( 'WP_DEBUG_LOG', false );\ndefine( 'WP_DEBUG_DISPLAY', false );\ndefine( 'DISALLOW_FILE_EDIT', true );"}, {"t": "Installed versions", "sh": "PowerShell", "note": "WordPress core version and the PHP header setting.", "code": "Select-String 'C:\\inetpub\\wwwroot\\wordpress\\wp-includes\\version.php' -Pattern 'wp_version ='\nSelect-String 'C:\\php\\php.ini' -Pattern '^\\s*expose_php'"}, {"t": "Users and roles with WP-CLI", "sh": "Command line · site folder", "note": "Where WP-CLI is installed. It hashes passwords properly and avoids hand-written serialised values.", "code": "# Create the user with a chosen role\nwp user create newuser newuser@example.com --role=subscriber\n\n# Change the role later\nwp user set-role newuser editor"}]], ["db", "Database (SQL)", [{"t": "Create a WordPress user with the lowest role", "sh": "SQL · WordPress database", "wide": 1, "note": "WordPress accepts the MD5 hash once and replaces it with a stronger hash at the first sign-in. Change the password straight after, since it was typed in plain text.", "code": "-- 1. Create the user\nINSERT INTO wp_users (user_login, user_pass, user_nicename, user_email, user_registered, user_status, display_name)\nVALUES ('newuser', MD5('ChangeThisPassword!'), 'newuser', 'newuser@example.com', NOW(), 0, 'New User');\n\n-- 2. Get the new user's ID\nSET @uid = LAST_INSERT_ID();\n\n-- 3. Assign the lowest role (Subscriber)\nINSERT INTO wp_usermeta (user_id, meta_key, meta_value)\nVALUES (@uid, 'wp_capabilities', 'a:1:{s:10:\"subscriber\";b:1;}'),\n       (@uid, 'wp_user_level', '0');"}, {"t": "Raise the role to Editor", "sh": "SQL · WordPress database", "note": "Takes effect on the next page load. The account can then edit and publish every page and post, but cannot touch plugins, themes, users or settings.", "code": "UPDATE wp_usermeta\nSET meta_value = 'a:1:{s:6:\"editor\";b:1;}'\nWHERE user_id = (SELECT ID FROM wp_users WHERE user_login = 'newuser')\n  AND meta_key = 'wp_capabilities';\n\nUPDATE wp_usermeta\nSET meta_value = '7'\nWHERE user_id = (SELECT ID FROM wp_users WHERE user_login = 'newuser')\n  AND meta_key = 'wp_user_level';"}, {"t": "Check which role each user holds", "sh": "SQL · WordPress database", "note": "A read-only check. A user with no row here, or a meta key with the wrong prefix, has no role at all.", "code": "SELECT u.ID, u.user_login, m.meta_value AS role\nFROM wp_users u\nJOIN wp_usermeta m ON m.user_id = u.ID\nWHERE m.meta_key = 'wp_capabilities';"}, {"t": "Restricted database account for the site", "sh": "SQL · MySQL server", "note": "These four privileges cover day-to-day running. Core and plugin updates also need CREATE, ALTER, INDEX and DROP, which can be granted only while updating.", "code": "CREATE USER 'wp_site'@'localhost' IDENTIFIED BY 'StrongPasswordHere';\nGRANT SELECT, INSERT, UPDATE, DELETE ON wordpress_db.* TO 'wp_site'@'localhost';\nFLUSH PRIVILEGES;"}]], ["verify", "Verify", [{"t": "Services running", "sh": "PowerShell", "note": "Both should be Running with an Automatic start type.", "code": "Get-Service W3SVC, MySQL* | Select Name, Status, StartType"}, {"t": "Response headers", "sh": "PowerShell", "note": "Look for Strict-Transport-Security and Permissions-Policy, and no X-Powered-By.", "code": "(Invoke-WebRequest 'https://www.example.com/wordpress/' `\n  -UseBasicParsing -Method Head).Headers"}, {"t": "Is the user list blocked?", "sh": "PowerShell", "note": "Expect 404 when run without being logged in.", "code": "$u = 'https://www.example.com/wordpress/wp-json/wp/v2/users'\ntry { (Invoke-WebRequest $u -UseBasicParsing).StatusCode }\ncatch { [int]$_.Exception.Response.StatusCode }"}, {"t": "What is listening, and where?", "sh": "PowerShell", "note": "MySQL and phpMyAdmin should show 127.0.0.1; only 80 and 443 should face the internet.", "code": "Get-NetTCPConnection -State Listen |\n  Sort-Object LocalPort |\n  Select-Object LocalAddress, LocalPort, OwningProcess"}, {"t": "Inbound rules for risky ports", "sh": "PowerShell", "note": "Should return nothing for 3389, 3306 and 8080.", "code": "Get-NetFirewallRule -Enabled True -Direction Inbound -Action Allow |\n  Get-NetFirewallPortFilter |\n  Where-Object { $_.LocalPort -in '3389','3306','33060','8080' }"}]]], "scan": [{"t": "Select the WordPress database", "sh": "SQL · MySQL server", "note": "The right database is the one named as DB_NAME in wp-config.php. SHOW TABLES should list wp_posts and wp_options.", "code": "SHOW DATABASES;\nUSE `wordpress_db`;\nSHOW TABLES;"}, {"t": "Administrator accounts", "sh": "SQL · WordPress database", "note": "Every account listed should be a person the team recognises. An unknown administrator is the most serious finding.", "code": "SELECT u.ID, u.user_login, u.user_email, u.user_registered\nFROM wp_users u\nJOIN wp_usermeta m ON m.user_id = u.ID\nWHERE m.meta_key LIKE '%capabilities'\n  AND m.meta_value LIKE '%administrator%'\nORDER BY u.user_registered DESC;"}, {"t": "Search for known bad domains", "sh": "SQL · WordPress database", "wide": 1, "note": "LIKE has no time limit, unlike REGEXP, which stopped on page-builder content hundreds of kilobytes long. Repeat against wp_postmeta.meta_value and wp_options.option_value.", "code": "SELECT ID, post_type, post_status, post_title, post_modified\nFROM wp_posts\nWHERE post_content LIKE '%spam-site-one.example%'\n   OR post_content LIKE '%spam-site-two.example%'\n   OR post_excerpt LIKE '%spam-site-one.example%'\n   OR post_title   LIKE '%spam-site-one.example%'\nORDER BY post_modified DESC;"}, {"t": "List every page with an external link", "sh": "SQL · WordPress database", "wide": 1, "note": "Strips the site's own addresses first, so any link that remains points somewhere else. This is the check that finds domains nobody has reported yet.", "code": "SELECT ID, post_type, post_status, post_title, post_modified\nFROM wp_posts\nWHERE REPLACE(REPLACE(REPLACE(post_content,\n        'https://www.example.com', ''),\n        'http://www.example.com', ''),\n        'https://booking.example.com', '')\n      LIKE '%href=\"http%'\nORDER BY post_modified DESC;"}, {"t": "Hidden links and injected code", "sh": "SQL · WordPress database", "note": "Expect some genuine matches, such as a contact-form script or a hidden mobile menu. Review each row by eye.", "code": "SELECT ID, post_type, post_title, post_modified\nFROM wp_posts\nWHERE post_type \u003c\u003e 'revision'\n  AND (post_content LIKE '%display:none%'\n    OR post_content LIKE '%display: none%'\n    OR post_content LIKE '%visibility:hidden%'\n    OR post_content LIKE '%\u003cscript%'\n    OR post_content LIKE '%\u003ciframe%'\n    OR post_content LIKE '%base64_decode%');"}, {"t": "Core settings and recent changes", "sh": "SQL · WordPress database", "note": "The site address and admin email must be the real ones, and registration should be closed. Compare dates with when staff actually edited the site.", "code": "SELECT option_name, option_value\nFROM wp_options\nWHERE option_name IN ('siteurl', 'home', 'admin_email',\n      'users_can_register', 'default_role');\n\nSELECT ID, post_type, post_title, post_modified\nFROM wp_posts\nWHERE post_type \u003c\u003e 'revision'\nORDER BY post_modified DESC\nLIMIT 50;"}, {"t": "Remove one injected link", "sh": "SQL · WordPress database", "wide": 1, "note": "Back up the database first. The statement removes one exact string from one row, so nothing else on the page can change. Clear the page-builder and site cache afterwards, and check older revisions before restoring any of them.", "code": "-- 1. Confirm the exact text is there\nSELECT ID, post_title\nFROM wp_posts\nWHERE ID = 22\n  AND post_content LIKE '%\u003ca href=\"http://spam-site-one.example\"\u003ehttp://spam-site-one.example\u003c/a\u003e %';\n\n-- 2. Remove the link and its trailing space\nUPDATE wp_posts\nSET post_content = REPLACE(post_content,\n    '\u003ca href=\"http://spam-site-one.example\"\u003ehttp://spam-site-one.example\u003c/a\u003e ', '')\nWHERE ID = 22;"}]};</script>
+<script>(function(){
+var D=window.__CASE__;
+var reduce=false;try{reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;}catch(e){}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+/* config tabs */
+var tabs=[].slice.call(document.querySelectorAll('.tab'));
+tabs.forEach(function(t){t.addEventListener('click',function(){
+  tabs.forEach(function(o){o.setAttribute('aria-selected','false');document.getElementById(o.getAttribute('aria-controls')).hidden=true;});
+  t.setAttribute('aria-selected','true');document.getElementById(t.getAttribute('aria-controls')).hidden=false;});});
+
+/* xml highlight */
+document.querySelectorAll('pre.xml').forEach(function(p){
+  var h=p.innerHTML.replace(/(&lt;!--[\s\S]*?--&gt;)/g,'\u0001$1\u0002');
+  p.innerHTML=h.split(/(\u0001[\s\S]*?\u0002)/).map(function(s){
+    if(s.charAt(0)==='\u0001')return '<span class="c-com">'+s.slice(1,-1)+'</span>';
+    return s.replace(/([\w:-]+)=(&quot;|")(.*?)\2/g,'<span class="c-attr">$1</span>=<span class="c-str">"$3"</span>')
+            .replace(/(&lt;\/?)([\w.:-]+)/g,'$1<span class="c-tag">$2</span>');
+  }).join('');
+});
+
+/* copy, delegated */
+document.addEventListener('click',function(ev){
+  var b=ev.target.closest&&ev.target.closest('.copy');if(!b)return;
+  var pre=b.parentNode.querySelector('pre');var txt=pre.innerText;
+  function done(m){b.textContent=m;setTimeout(function(){b.textContent='Copy';},1600);}
+  function sel(){var r=document.createRange();r.selectNodeContents(pre);var s=getSelection();s.removeAllRanges();s.addRange(r);done('Selected');}
+  try{navigator.clipboard.writeText(txt).then(function(){done('Copied');},sel);}catch(e){sel();}
+});
+
+/* port board */
+var rows=document.getElementById('rows'),bB=document.getElementById('btn-before'),bA=document.getElementById('btn-after'),bt=document.getElementById('board-title');
+function board(st){
+  bB.setAttribute('aria-pressed',st===0);bA.setAttribute('aria-pressed',st===1);
+  bt.textContent=st===0?'Before hardening':'After hardening';
+  rows.innerHTML=D.ports.map(function(r,i){
+    var e=!!r.edge[st],h=!!r.host[st],stop=e?(h?'100%':'66.6%'):'33.3%',both=e&&h,cls,lab,pk;
+    if(both&&r.pub){cls='pub';lab='Public by design';pk='ok';}
+    else if(both){cls='crit';lab='Exposed to internet';pk='bad';}
+    else if(e||h){cls='warn';lab='One layer only';pk='';}
+    else{cls='good';lab='Blocked twice';pk='';}
+    return '<div class="row"><div class="svc"><b>'+esc(r.p)+'</b><span>'+esc(r.s)+'</span></div><div class="track"><span class="gate'+(e?' open':'')+'" style="left:33.3%"></span><span class="gate'+(h?' open':'')+'" style="left:66.6%"></span><span class="endpoint"></span><span class="pkt '+pk+'" style="--stop:'+stop+';animation-delay:'+(reduce?0:.12*i)+'s"></span></div><span class="pill '+cls+'">'+lab+'</span></div>';
+  }).join('');
+}
+bB.addEventListener('click',function(){board(0);});bA.addEventListener('click',function(){board(1);});board(1);
+
+/* layers */
+var lt=document.getElementById('ltabs'),tl=document.getElementById('tasks'),li=document.getElementById('layer-intro');
+lt.innerHTML=D.layers.map(function(L){return '<button type="button" role="tab" data-id="'+L.id+'" aria-selected="false">'+esc(L.name)+' <em>'+L.tasks.length+'</em></button>';}).join('');
+function layer(id){
+  var L=D.layers.filter(function(x){return x.id===id;})[0];
+  [].forEach.call(lt.children,function(b){b.setAttribute('aria-selected',b.dataset.id===id);});
+  li.textContent=L.intro;
+  tl.innerHTML=L.tasks.map(function(t){
+    return '<li class="task" data-open="false"><button type="button" aria-expanded="false"><svg class="tick" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="9"/><path d="M5.5 10.5l3 3 6-6.5"/></svg><span class="t"><strong>'+esc(t.t)+'</strong><span>'+esc(t.s)+'</span></span><span class="ph ph'+t.ph+'">Phase '+t.ph+'</span><span class="chev" aria-hidden="true">+</span></button><div class="detail" hidden><p><b>What changed.</b> '+esc(t.what)+'</p><p><b>Why it matters.</b> '+esc(t.why)+'</p>'+(t.code?'<div class="codebox" style="border-radius:var(--radius)"><button class="copy" type="button">Copy</button><pre>'+esc(t.code)+'</pre></div>':'')+'</div></li>';
+  }).join('');
+}
+lt.addEventListener('click',function(e){var b=e.target.closest('button');if(b)layer(b.dataset.id);});
+tl.addEventListener('click',function(e){var b=e.target.closest('.task > button');if(!b)return;var n=b.parentNode,o=n.dataset.open!=='true';n.dataset.open=o;b.setAttribute('aria-expanded',o);n.querySelector('.detail').hidden=!o;});
+layer('edge');
+
+/* roles */
+var rt=document.getElementById('rtabs');
+rt.innerHTML=D.roles.map(function(r,i){var l='';for(var k=0;k<5;k++)l+='<i'+(k<=i?' class="on"':'')+'></i>';return '<button type="button" data-i="'+i+'" aria-pressed="false"><span class="lvl" aria-hidden="true">'+l+'</span>'+esc(r.n)+'</button>';}).join('');
+function role(i){
+  var r=D.roles[i],n=r.n.toLowerCase();
+  [].forEach.call(rt.children,function(b,k){b.setAttribute('aria-pressed',k===i);});
+  document.getElementById('role-name').textContent=r.n;
+  document.getElementById('role-note').textContent=r.note;
+  var bd=document.getElementById('role-badge');bd.hidden=!r.badge;if(r.badge){bd.className='pill '+r.badge[0];bd.textContent=r.badge[1];}
+  var m=document.getElementById('role-meter');m.style.width=(20*(i+1))+'%';m.className=i===4?'max':'';
+  document.getElementById('caps').innerHTML=D.caps.map(function(c){var y=i>=c[1];return '<li class="'+(y?'yes':'no')+'"><span class="mk" aria-hidden="true">'+(y?'✓':'✕')+'</span><span>'+esc(c[0])+(y?'':'<span style="position:absolute;clip:rect(0 0 0 0)"> (not allowed)</span>')+'</span></li>';}).join('');
+  document.getElementById('role-meta').textContent='wp_capabilities   a:1:{s:'+n.length+':"'+n+'";b:1;}\nwp_user_level     '+r.lv;
+}
+rt.addEventListener('click',function(e){var b=e.target.closest('button');if(b)role(+b.dataset.i);});role(3);
+
+/* specimen */
+var sp=document.getElementById('specimen'),sb=document.getElementById('spec-bad'),so=document.getElementById('spec-ok'),spl=document.getElementById('spec-pill');
+function spec(clean){sp.dataset.state=clean?'clean':'infected';sb.setAttribute('aria-pressed',!clean);so.setAttribute('aria-pressed',clean);spl.className='pill '+(clean?'pub':'crit');spl.textContent=clean?'No injected links':'2 injected links';}
+sb.addEventListener('click',function(){spec(false);});so.addEventListener('click',function(){spec(true);});
+
+/* code cards */
+function card(c){
+  var code=esc(c.code).split('\n').map(function(l){return /^\s*(#|--)/.test(l)?'<span class="c-cm">'+l+'</span>':l;}).join('\n');
+  return '<div class="cmd'+(c.wide?' wide':'')+'"><span class="sh">'+esc(c.sh)+'</span><h4>'+esc(c.t)+'</h4><p>'+esc(c.note)+'</p><div class="codebox"><button class="copy" type="button">Copy</button><pre>'+code+'</pre></div></div>';
+}
+document.getElementById('scan-sql').innerHTML=D.scan.map(card).join('');
+var cg=document.getElementById('cgroups'),cm=document.getElementById('cmds');
+cg.innerHTML=D.cmds.map(function(g,i){return '<button type="button" data-i="'+i+'" aria-pressed="false">'+esc(g[1])+' · '+g[2].length+'</button>';}).join('');
+function grp(i){[].forEach.call(cg.children,function(b,k){b.setAttribute('aria-pressed',k===i);});cm.innerHTML=D.cmds[i][2].map(card).join('');}
+cg.addEventListener('click',function(e){var b=e.target.closest('button');if(b)grp(+b.dataset.i);});grp(0);
+
+/* checklist */
+var boxes=[].slice.call(document.querySelectorAll('.ck input')),KEY='iis-wp-hardening-checks-v2',saved={};
+try{saved=JSON.parse(localStorage.getItem(KEY)||'{}');}catch(e){}
+function upd(){var n=boxes.filter(function(b){return b.checked;}).length;
+  document.getElementById('count').textContent=n+' / '+boxes.length+' done';
+  document.getElementById('bar').style.width=(n/boxes.length*100)+'%';
+  var o={};boxes.forEach(function(b){if(b.checked)o[b.id]=1;});try{localStorage.setItem(KEY,JSON.stringify(o));}catch(e){}}
+boxes.forEach(function(b){if(saved[b.id])b.checked=true;b.addEventListener('change',upd);});
+document.getElementById('reset').addEventListener('click',function(){boxes.forEach(function(b){b.checked=false;});upd();});
+upd();
+})();
+</script>
+
+</body>
+</html>
